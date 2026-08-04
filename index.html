@@ -42,8 +42,6 @@
   .login-error{display:none;background:var(--alert-bg);color:var(--alert);border:1px solid #D9B9B4;border-radius:8px;padding:9px 12px;font-size:12.5px;margin-bottom:14px;}
   .login-error.show{display:block;}
   .login-toggle{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line);}
-  .login-toggle button{background:none;border:none;color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline;font-family:Georgia,serif;font-size:12.5px;padding:0;}
-  .login-toggle span{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;}
   .login-panel{display:none;}
   .login-panel.show{display:block;}
   #staffApp,#adminApp,#reportApp{display:none;}
@@ -195,8 +193,9 @@
         <div><label>Requested By</label><input type="text" id="requestedBy" placeholder="Your name"></div>
         <div><label>Reason / Purpose</label><input type="text" id="reason" placeholder="Why is this needed?"></div>
       </div>
-      <div class="row single">
-        <div><label>Item Photo (Optional)</label><input type="file" accept="image/*" id="itemPhotoInput"></div>
+      <div class="row">
+        <div><label>Item Photo 1 (Optional)</label><input type="file" accept="image/*" id="itemPhotoInput1"></div>
+        <div><label>Item Photo 2 (Optional)</label><input type="file" accept="image/*" id="itemPhotoInput2"></div>
       </div>
       <div class="row single">
         <div><label>Notes (Optional)</label><textarea id="notes" placeholder="Any additional details..."></textarea></div>
@@ -207,13 +206,14 @@
 
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-        <h3 style="margin:0;">My Requests</h3>
+        <h3 style="margin:0;">My Requests & Status</h3>
         <button type="button" class="secondary" id="staffRefreshBtn">Refresh</button>
       </div>
+      <p class="hint">Check your submitted requests and their live status below.</p>
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Date</th><th>Branch</th><th>Type</th><th>Item</th><th>Qty</th><th>Urgency</th><th>Est. Cost</th><th>Status</th><th>Photo</th></tr>
+            <tr><th>Date</th><th>Branch</th><th>Type</th><th>Item</th><th>Qty</th><th>Urgency</th><th>Est. Cost</th><th>Status</th><th>Photo 1</th><th>Photo 2</th></tr>
           </thead>
           <tbody id="staffTbody"></tbody>
         </table>
@@ -273,7 +273,7 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Date</th><th>Branch</th><th>Type</th><th>Item</th><th>Qty</th><th>Urgency</th><th>Est. Cost</th><th>Requested By</th><th>Reason</th><th>Status</th><th>Photo</th></tr>
+            <tr><th>Date</th><th>Branch</th><th>Type</th><th>Item</th><th>Qty</th><th>Urgency</th><th>Est. Cost</th><th>Requested By</th><th>Reason</th><th>Status</th><th>Photos</th></tr>
           </thead>
           <tbody id="reportDetailTbody"></tbody>
         </table>
@@ -342,7 +342,7 @@
     <div class="table-wrap" style="margin:0 16px;">
       <table>
         <thead>
-          <tr><th>Date</th><th>Branch</th><th>Type</th><th>Requested By</th><th>Item</th><th>Qty</th><th>Urgency</th><th>Est. Cost</th><th>Reason</th><th>Status</th><th>Photo</th><th></th></tr>
+          <tr><th>Date</th><th>Branch</th><th>Type</th><th>Requested By</th><th>Item</th><th>Qty</th><th>Urgency</th><th>Est. Cost</th><th>Reason</th><th>Status</th><th>Photos</th><th></th></tr>
         </thead>
         <tbody id="adminTbody"></tbody>
       </table>
@@ -373,11 +373,16 @@
     </div>
     <div class="row single"><div><label>Reason / Purpose</label><input type="text" id="editReason"></div></div>
     <div class="row single"><div><label>Notes</label><textarea id="editNotes"></textarea></div></div>
-    <div class="row single">
+    <div class="row">
       <div>
-        <label>Item Photo</label>
-        <div id="editCurrentPhoto" style="margin-bottom:8px;"></div>
-        <input type="file" accept="image/*" id="editPhotoInput">
+        <label>Item Photo 1</label>
+        <div id="editCurrentPhoto1" style="margin-bottom:8px;"></div>
+        <input type="file" accept="image/*" id="editPhotoInput1">
+      </div>
+      <div>
+        <label>Item Photo 2</label>
+        <div id="editCurrentPhoto2" style="margin-bottom:8px;"></div>
+        <input type="file" accept="image/*" id="editPhotoInput2">
       </div>
     </div>
     <div class="edit-actions">
@@ -448,8 +453,7 @@ function showToast(msg, isErr){
 function urgencyClass(u){ return 'urgency-' + (u||'').toLowerCase(); }
 function statusClass(s){ return (s||'Pending').toLowerCase(); }
 
-// ===== PHOTO VIEWER (shown inline instead of opening the data: URL as a new tab,
-// which fails to render on many mobile browsers once the image is a large base64 string) =====
+// ===== PHOTO VIEWER =====
 function openPhotoModal(photoDataUrl){
   if(!photoDataUrl) return;
   document.getElementById('photoViewImg').src = photoDataUrl;
@@ -465,7 +469,7 @@ document.getElementById('photoViewOverlay').addEventListener('click', (e)=>{
   if(e.target.id === 'photoViewOverlay') closePhotoModal();
 });
 
-// ===== BRANCHES (Firestore-managed, admin can add/remove) =====
+// ===== BRANCHES =====
 let branchesList = null;
 const BRANCHES_COLLECTION = "appBranches";
 
@@ -478,8 +482,6 @@ async function ensureBranchesLoaded(forceRefresh){
   const snap = await getDocs(collection(db, BRANCHES_COLLECTION));
   let existing = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-  // One-time safety seed: only runs if the branches collection is completely empty
-  // (first run, or if every branch was deleted). Never overwrites existing data.
   if(existing.length === 0){
     const defaults = CONFIG.BRANCH_LOGINS.map(b => b.branch);
     await Promise.all(defaults.map(name => setDoc(doc(db, BRANCHES_COLLECTION, slugify(name)), { name })));
@@ -497,7 +499,7 @@ function populateBranchSelect(selectEl, includeAllOption){
   selectEl.value = current;
 }
 
-// ===== USERS (Firestore-managed logins: role = user / report / admin) =====
+// ===== USERS =====
 let usersList = null;
 const USERS_COLLECTION = "appUsers";
 
@@ -506,8 +508,6 @@ async function ensureUsersLoaded(forceRefresh){
   const snap = await getDocs(collection(db, USERS_COLLECTION));
   let existing = snap.docs.map(d => d.data());
 
-  // One-time safety seed: only runs if there are truly zero users (first run, or
-  // everyone got deleted) so the app never becomes totally unreachable.
   if(existing.length === 0){
     const seedAdmin = { username: CONFIG.ADMIN_LOGIN.username, password: CONFIG.ADMIN_LOGIN.password, role: 'admin' };
     await setDoc(doc(db, USERS_COLLECTION, seedAdmin.username), seedAdmin);
@@ -518,7 +518,7 @@ async function ensureUsersLoaded(forceRefresh){
   return usersList;
 }
 
-// ===== PHOTO COMPRESSION (resize + re-encode before saving to Firestore) =====
+// ===== PHOTO COMPRESSION =====
 function compressImage(file, maxDim = 1280, quality = 0.7){
   return new Promise((resolve, reject)=>{
     if(!file){ resolve(""); return; }
@@ -543,7 +543,7 @@ function compressImage(file, maxDim = 1280, quality = 0.7){
   });
 }
 
-// ===== LOGIN (single form — role determines where you land) =====
+// ===== LOGIN =====
 let currentUsername = null;
 
 document.getElementById('staffLoginForm').addEventListener('submit', async (e)=>{
@@ -563,7 +563,7 @@ document.getElementById('staffLoginForm').addEventListener('submit', async (e)=>
     users = await ensureUsersLoaded();
     branches = await ensureBranchesLoaded();
   } catch(err){
-    errBox.textContent = 'Could not connect — check Firebase config/rules (see console)';
+    errBox.textContent = 'Could not connect — check Firebase config/rules';
     errBox.classList.add('show');
     console.error('Login load failed:', err);
     return;
@@ -601,22 +601,14 @@ document.getElementById('staffLoginForm').addEventListener('submit', async (e)=>
       await loadStaffRequests();
     }
   } catch(err){
-    showToast('Could not load data — check Firebase config/rules (see console)', true);
+    showToast('Could not load data — check Firebase config/rules', true);
     console.error('Post-login load failed:', err);
   }
 });
 
-document.getElementById('reportLogoutBtn').addEventListener('click', ()=>{
-  location.reload();
-});
-
-document.getElementById('staffLogoutBtn').addEventListener('click', ()=>{
-  location.reload();
-});
-
-document.getElementById('adminLogoutBtn').addEventListener('click', ()=>{
-  location.reload();
-});
+document.getElementById('reportLogoutBtn').addEventListener('click', ()=> location.reload());
+document.getElementById('staffLogoutBtn').addEventListener('click', ()=> location.reload());
+document.getElementById('adminLogoutBtn').addEventListener('click', ()=> location.reload());
 
 // ===== ADMIN: MANAGE USERS =====
 const ROLE_LABELS = { admin: 'Admin', report: 'Report Viewer', user: 'User' };
@@ -636,7 +628,7 @@ function renderUsersList(){
         showToast('Cannot remove the last admin account', true);
         return;
       }
-      if(!confirm('Remove this user? They will no longer be able to log in.')) return;
+      if(!confirm('Remove this user?')) return;
       btn.disabled = true;
       try{
         await deleteDoc(doc(db, USERS_COLLECTION, btn.dataset.username));
@@ -645,7 +637,6 @@ function renderUsersList(){
         showToast('User removed');
       } catch(err){
         showToast('Could not remove user', true);
-        console.error(err);
         btn.disabled = false;
       }
     });
@@ -679,12 +670,7 @@ document.getElementById('addUserBtn').addEventListener('click', async ()=>{
     document.getElementById('newPassword').value = '';
     showToast('User created!');
   } catch(err){
-    if(err.code === 'permission-denied'){
-      showToast('Blocked by Firestore rules — update rules in Firebase Console', true);
-    } else {
-      showToast('Could not create user: ' + (err.message || err.code || 'unknown error'), true);
-    }
-    console.error('Create user failed:', err);
+    showToast('Could not create user', true);
   } finally{
     btn.disabled = false; btn.textContent = 'Create User';
   }
@@ -700,7 +686,7 @@ function renderBranchesList(){
   `).join('');
   document.querySelectorAll('.removeBranchBtn').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
-      if(!confirm('Remove this branch? Past requests under it will stay, but staff won\'t be able to pick it anymore.')) return;
+      if(!confirm('Remove this branch?')) return;
       btn.disabled = true;
       try{
         await deleteDoc(doc(db, BRANCHES_COLLECTION, btn.dataset.id));
@@ -710,7 +696,6 @@ function renderBranchesList(){
         showToast('Branch removed');
       } catch(err){
         showToast('Could not remove branch', true);
-        console.error(err);
         btn.disabled = false;
       }
     });
@@ -748,8 +733,7 @@ document.getElementById('addBranchBtn').addEventListener('click', async ()=>{
     document.getElementById('newBranchName').value = '';
     showToast('Branch added!');
   } catch(err){
-    showToast('Could not add branch: ' + (err.message || err.code || 'unknown error'), true);
-    console.error('Add branch failed:', err);
+    showToast('Could not add branch', true);
   } finally{
     btn.disabled = false; btn.textContent = 'Add Branch';
   }
@@ -775,24 +759,22 @@ document.getElementById('submitRequestBtn').addEventListener('click', async ()=>
     showToast('Please fill Item Name, Quantity and Requested By', true);
     return;
   }
-  if(CONFIG.FIREBASE_CONFIG.apiKey.includes("PASTE_YOUR")){
-    showToast('Please set up CONFIG.FIREBASE_CONFIG first', true);
-    return;
-  }
 
   const btn = document.getElementById('submitRequestBtn');
   btn.disabled = true; btn.textContent = 'Submitting...';
 
   try{
-    const photoFile = document.getElementById('itemPhotoInput').files[0];
-    const itemPhoto = await compressImage(photoFile);
+    const photoFile1 = document.getElementById('itemPhotoInput1').files[0];
+    const photoFile2 = document.getElementById('itemPhotoInput2').files[0];
+    const itemPhoto1 = await compressImage(photoFile1);
+    const itemPhoto2 = await compressImage(photoFile2);
 
     await addDoc(collection(db, CONFIG.COLLECTION), {
       branch,
       submittedBy: currentUsername,
       date: todayStr(),
       requestType, itemName, quantity, urgency, estimatedCost, requestedBy, reason, notes,
-      itemPhoto,
+      itemPhoto1, itemPhoto2,
       status: 'Pending',
       createdAt: serverTimestamp()
     });
@@ -801,11 +783,11 @@ document.getElementById('submitRequestBtn').addEventListener('click', async ()=>
       document.getElementById(id).value = '';
     });
     document.getElementById('requestType').value = 'Purchase';
-    document.getElementById('itemPhotoInput').value = '';
+    document.getElementById('itemPhotoInput1').value = '';
+    document.getElementById('itemPhotoInput2').value = '';
     await loadStaffRequests();
   } catch(err){
-    showToast('Could not submit — check connection/setup', true);
-    console.error(err);
+    showToast('Could not submit — check connection', true);
   } finally{
     btn.disabled = false; btn.textContent = 'Submit Request →';
   }
@@ -814,13 +796,13 @@ document.getElementById('submitRequestBtn').addEventListener('click', async ()=>
 // ===== STAFF: LOAD MY OWN SUBMITTED REQUESTS =====
 async function loadStaffRequests(){
   const tbody = document.getElementById('staffTbody');
-  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Loading…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Loading…</td></tr>';
   try{
     const q = query(collection(db, CONFIG.COLLECTION), where('submittedBy','==',currentUsername), orderBy('createdAt','desc'), limit(100));
     const snap = await getDocs(q);
     const rows = snap.docs.map(d => d.data());
     if(rows.length === 0){
-      tbody.innerHTML = '<tr><td colspan="9" class="empty">No requests yet.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="empty">No requests yet.</td></tr>';
       return;
     }
     tbody.innerHTML = rows.map((r,i) => `
@@ -833,29 +815,31 @@ async function loadStaffRequests(){
         <td>${r.urgency ? `<span class="pill ${urgencyClass(r.urgency)}">${r.urgency}</span>` : ''}</td>
         <td>${r.estimatedCost || ''}</td>
         <td><span class="pill ${statusClass(r.status)}">${r.status || 'Pending'}</span></td>
-        <td>${r.itemPhoto ? `<button type="button" class="photo-link view-photo-btn" data-idx="${i}">View</button>` : ''}</td>
+        <td>${r.itemPhoto1 ? `<button type="button" class="photo-link view-photo-btn" data-idx="${i}" data-photo="1">View 1</button>` : ''}</td>
+        <td>${r.itemPhoto2 ? `<button type="button" class="photo-link view-photo-btn" data-idx="${i}" data-photo="2">View 2</button>` : ''}</td>
       </tr>
     `).join('');
     document.querySelectorAll('#staffTbody .view-photo-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=> openPhotoModal(rows[Number(btn.dataset.idx)].itemPhoto));
+      btn.addEventListener('click', ()=>{
+        const r = rows[Number(btn.dataset.idx)];
+        const pUrl = btn.dataset.photo === '1' ? r.itemPhoto1 : r.itemPhoto2;
+        openPhotoModal(pUrl);
+      });
     });
   } catch(err){
-    tbody.innerHTML = '<tr><td colspan="9" class="empty">Could not load — check connection/setup.</td></tr>';
-    console.error(err);
+    tbody.innerHTML = '<tr><td colspan="10" class="empty">Could not load — check connection.</td></tr>';
   }
 }
 document.getElementById('staffRefreshBtn').addEventListener('click', loadStaffRequests);
 
-// ===== REPORT (view-only role): PENDING/DONE COUNTS BY DATE RANGE =====
-let reportRows = [];       // full rows for the currently applied filter
-let reportActiveStatus = null; // '', 'Pending', 'Done', or null (detail card closed)
-
+// ===== REPORT =====
+let reportRows = [];
 async function loadReportStats(){
   const totalEl = document.getElementById('statTotal');
   const pendingEl = document.getElementById('statPending');
   const doneEl = document.getElementById('statDone');
   totalEl.textContent = '…'; pendingEl.textContent = '…'; doneEl.textContent = '…';
-  hideReportDetail();
+  document.getElementById('reportDetailCard').style.display = 'none';
   try{
     const branchVal = document.getElementById('reportBranch').value;
     const from = document.getElementById('reportFrom').value;
@@ -875,8 +859,6 @@ async function loadReportStats(){
   } catch(err){
     reportRows = [];
     totalEl.textContent = '—'; pendingEl.textContent = '—'; doneEl.textContent = '—';
-    showToast('Could not load report — check connection/setup', true);
-    console.error(err);
   }
 }
 document.getElementById('reportApplyBtn').addEventListener('click', loadReportStats);
@@ -887,17 +869,8 @@ document.getElementById('reportClearBtn').addEventListener('click', ()=>{
   loadReportStats();
 });
 
-// ===== REPORT: DETAIL TABLE (shown when tapping a summary box) =====
-function hideReportDetail(){
-  reportActiveStatus = null;
-  document.getElementById('reportDetailCard').style.display = 'none';
-  document.querySelectorAll('#reportApp .stat-box.clickable').forEach(el => el.classList.remove('active'));
-}
-
 function renderReportDetail(filterStatus, boxEl){
-  reportActiveStatus = filterStatus;
   const rows = filterStatus ? reportRows.filter(r => (r.status || 'Pending') === filterStatus) : reportRows;
-
   document.querySelectorAll('#reportApp .stat-box.clickable').forEach(el => el.classList.remove('active'));
   if(boxEl) boxEl.classList.add('active');
 
@@ -906,7 +879,7 @@ function renderReportDetail(filterStatus, boxEl){
 
   const tbody = document.getElementById('reportDetailTbody');
   if(rows.length === 0){
-    tbody.innerHTML = '<tr><td colspan="11" class="empty">No requests found for this filter.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="empty">No requests found.</td></tr>';
   } else {
     tbody.innerHTML = rows.map((r,i) => `
       <tr>
@@ -920,21 +893,26 @@ function renderReportDetail(filterStatus, boxEl){
         <td>${r.requestedBy || ''}</td>
         <td>${r.reason || ''}</td>
         <td><span class="pill ${statusClass(r.status)}">${r.status || 'Pending'}</span></td>
-        <td>${r.itemPhoto ? `<button type="button" class="photo-link view-photo-btn" data-idx="${i}">View</button>` : ''}</td>
+        <td>
+          ${r.itemPhoto1 ? `<button type="button" class="photo-link view-photo-btn" data-idx="${i}" data-photo="1">P1</button> ` : ''}
+          ${r.itemPhoto2 ? `<button type="button" class="photo-link view-photo-btn" data-idx="${i}" data-photo="2">P2</button>` : ''}
+        </td>
       </tr>
     `).join('');
     document.querySelectorAll('#reportDetailTbody .view-photo-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=> openPhotoModal(rows[Number(btn.dataset.idx)].itemPhoto));
+      btn.addEventListener('click', ()=>{
+        const r = rows[Number(btn.dataset.idx)];
+        openPhotoModal(btn.dataset.photo === '1' ? r.itemPhoto1 : r.itemPhoto2);
+      });
     });
   }
   document.getElementById('reportDetailCard').style.display = 'block';
-  document.getElementById('reportDetailCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 document.getElementById('statBoxTotal').addEventListener('click', function(){ renderReportDetail('', this); });
 document.getElementById('statBoxPending').addEventListener('click', function(){ renderReportDetail('Pending', this); });
 document.getElementById('statBoxDone').addEventListener('click', function(){ renderReportDetail('Done', this); });
-document.getElementById('reportDetailCloseBtn').addEventListener('click', hideReportDetail);
+document.getElementById('reportDetailCloseBtn').addEventListener('click', ()=> document.getElementById('reportDetailCard').style.display = 'none');
 
 // ===== ADMIN: LOAD ALL REQUESTS =====
 async function loadAdminRequests(){
@@ -971,7 +949,10 @@ async function loadAdminRequests(){
         <td>${r.estimatedCost || ''}</td>
         <td>${r.reason || ''}</td>
         <td><span class="pill ${statusClass(r.status)}">${r.status || 'Pending'}</span></td>
-        <td>${r.itemPhoto ? `<button type="button" class="photo-link view-photo-btn" data-id="${r.id}">View</button>` : ''}</td>
+        <td>
+          ${r.itemPhoto1 ? `<button type="button" class="photo-link view-photo-btn" data-id="${r.id}" data-photo="1">P1</button> ` : ''}
+          ${r.itemPhoto2 ? `<button type="button" class="photo-link view-photo-btn" data-id="${r.id}" data-photo="2">P2</button>` : ''}
+        </td>
         <td><button type="button" class="edit-btn" data-id="${r.id}">Edit</button></td>
       </tr>
     `).join('');
@@ -979,11 +960,13 @@ async function loadAdminRequests(){
       btn.addEventListener('click', ()=> openEditModal(rows.find(r=>r.id===btn.dataset.id)));
     });
     document.querySelectorAll('#adminTbody .view-photo-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=> openPhotoModal(rows.find(r=>r.id===btn.dataset.id).itemPhoto));
+      btn.addEventListener('click', ()=>{
+        const row = rows.find(r=>r.id===btn.dataset.id);
+        openPhotoModal(btn.dataset.photo === '1' ? row.itemPhoto1 : row.itemPhoto2);
+      });
     });
   } catch(err){
-    tbody.innerHTML = '<tr><td colspan="12" class="empty">Could not load — check connection/setup.</td></tr>';
-    console.error(err);
+    tbody.innerHTML = '<tr><td colspan="12" class="empty">Could not load.</td></tr>';
   }
 }
 document.getElementById('refreshRequestsBtn').addEventListener('click', loadAdminRequests);
@@ -999,10 +982,12 @@ document.getElementById('clearFilterBtn').addEventListener('click', ()=>{
 
 // ===== ADMIN: EDIT MODAL =====
 let editingId = null;
-let editingCurrentPhoto = "";
+let editingPhoto1 = "";
+let editingPhoto2 = "";
 function openEditModal(row){
   editingId = row.id;
-  editingCurrentPhoto = row.itemPhoto || "";
+  editingPhoto1 = row.itemPhoto1 || "";
+  editingPhoto2 = row.itemPhoto2 || "";
   document.getElementById('editRequestType').value = row.requestType || 'Purchase';
   document.getElementById('editItemName').value = row.itemName || '';
   document.getElementById('editQuantity').value = row.quantity || '';
@@ -1012,13 +997,19 @@ function openEditModal(row){
   document.getElementById('editStatus').value = row.status || 'Pending';
   document.getElementById('editReason').value = row.reason || '';
   document.getElementById('editNotes').value = row.notes || '';
-  document.getElementById('editPhotoInput').value = '';
-  document.getElementById('editCurrentPhoto').innerHTML = editingCurrentPhoto
-    ? `<button type="button" class="photo-link" id="editViewPhotoBtn">View current photo</button>`
-    : '<span style="font-size:12px;color:var(--ink-soft);">No photo attached</span>';
-  if(editingCurrentPhoto){
-    document.getElementById('editViewPhotoBtn').addEventListener('click', ()=> openPhotoModal(editingCurrentPhoto));
-  }
+  document.getElementById('editPhotoInput1').value = '';
+  document.getElementById('editPhotoInput2').value = '';
+
+  document.getElementById('editCurrentPhoto1').innerHTML = editingPhoto1
+    ? `<button type="button" class="photo-link" id="editViewPhoto1">View Photo 1</button>`
+    : '<span style="font-size:12px;color:var(--ink-soft);">No photo</span>';
+  document.getElementById('editCurrentPhoto2').innerHTML = editingPhoto2
+    ? `<button type="button" class="photo-link" id="editViewPhoto2">View Photo 2</button>`
+    : '<span style="font-size:12px;color:var(--ink-soft);">No photo</span>';
+
+  if(editingPhoto1) document.getElementById('editViewPhoto1').addEventListener('click', ()=> openPhotoModal(editingPhoto1));
+  if(editingPhoto2) document.getElementById('editViewPhoto2').addEventListener('click', ()=> openPhotoModal(editingPhoto2));
+
   document.getElementById('editOverlay').classList.add('show');
 }
 document.getElementById('cancelEditBtn').addEventListener('click', ()=>{
@@ -1030,8 +1021,10 @@ document.getElementById('saveEditBtn').addEventListener('click', async ()=>{
   const btn = document.getElementById('saveEditBtn');
   btn.disabled = true; btn.textContent = 'Saving...';
   try{
-    const newPhotoFile = document.getElementById('editPhotoInput').files[0];
-    const newPhoto = newPhotoFile ? await compressImage(newPhotoFile) : editingCurrentPhoto;
+    const file1 = document.getElementById('editPhotoInput1').files[0];
+    const file2 = document.getElementById('editPhotoInput2').files[0];
+    const newPhoto1 = file1 ? await compressImage(file1) : editingPhoto1;
+    const newPhoto2 = file2 ? await compressImage(file2) : editingPhoto2;
 
     await updateDoc(doc(db, CONFIG.COLLECTION, editingId), {
       requestType: document.getElementById('editRequestType').value,
@@ -1043,7 +1036,8 @@ document.getElementById('saveEditBtn').addEventListener('click', async ()=>{
       status: document.getElementById('editStatus').value,
       reason: document.getElementById('editReason').value.trim(),
       notes: document.getElementById('editNotes').value.trim(),
-      itemPhoto: newPhoto
+      itemPhoto1: newPhoto1,
+      itemPhoto2: newPhoto2
     });
     showToast('Request updated!');
     document.getElementById('editOverlay').classList.remove('show');
@@ -1051,7 +1045,6 @@ document.getElementById('saveEditBtn').addEventListener('click', async ()=>{
     await loadAdminRequests();
   } catch(err){
     showToast('Could not save changes', true);
-    console.error(err);
   } finally{
     btn.disabled = false; btn.textContent = 'Save Changes';
   }
