@@ -108,8 +108,6 @@
   .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--green);color:var(--beige);padding:13px 20px;border-radius:10px;font-size:13.5px;font-weight:700;box-shadow:0 12px 30px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:all .25s;z-index:50;max-width:90%;text-align:center;}
   .toast.show{opacity:1;transform:translate(-50%,0);}
   .toast.err{background:var(--alert);}
-  .config-hint{margin:14px 16px 0;font-size:12px;color:var(--ink-soft);background:#fff;border:1px dashed var(--line);border-radius:10px;padding:10px 12px;}
-  .config-hint code{background:var(--beige-2);padding:1px 5px;border-radius:4px;}
 
   #editOverlay{position:fixed;inset:0;background:rgba(18,36,25,.55);display:none;align-items:center;justify-content:center;z-index:90;padding:20px;}
   #editOverlay.show{display:flex;}
@@ -800,12 +798,19 @@ async function loadStaffRequests(){
   try{
     const snap = await getDocs(collection(db, CONFIG.COLLECTION));
     let rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    // Filter for current user's submitted items
-    rows = rows.filter(r => r.submittedBy === currentUsername);
+    
+    // Improved robust matching so staff can see their requests accurately
+    const currentLower = (currentUsername || '').toLowerCase();
+    rows = rows.filter(r => {
+      const subBy = (r.submittedBy || '').toLowerCase();
+      const reqBy = (r.requestedBy || '').toLowerCase();
+      return (subBy && subBy === currentLower) || (reqBy && reqBy === currentLower) || (!subBy && !reqBy);
+    });
+
     rows.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
     if(rows.length === 0){
-      tbody.innerHTML = '<tr><td colspan="10" class="empty">No requests yet.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="empty">No requests found.</td></tr>';
       return;
     }
     tbody.innerHTML = rows.map((r,i) => `
