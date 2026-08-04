@@ -70,7 +70,7 @@
   @media(max-width:640px){.row,.row.three{grid-template-columns:1fr;}}
 
   label{display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
-  input[type=text],input[type=number],select,textarea{
+  input[type=text],input[type=number],input[type=date],select,textarea{
     width:100%;border:1.5px solid var(--line);background:var(--beige-2);border-radius:10px;
     padding:10px 12px;font-size:14.5px;font-family:Georgia,serif;color:var(--green);outline:none;
   }
@@ -231,16 +231,25 @@
     <header>
       <div class="eyebrow">Report — View Only</div>
       <h1>Requests Report</h1>
-      <p>See how many requests are pending vs done, filtered by branch and date.</p>
+      <p>See how many requests are pending vs done, filtered by branch, request type, and date.</p>
     </header>
 
     <div class="card">
       <h3>Filters</h3>
-      <p class="hint">Leave dates blank to include all requests.</p>
-      <div class="row three">
+      <p class="hint">Leave blank to include all requests.</p>
+      <div class="row">
         <div><label>Branch</label>
           <select id="reportBranch"><option value="">All branches</option></select>
         </div>
+        <div><label>Type of Request</label>
+          <select id="reportType">
+            <option value="">All types</option>
+            <option value="Purchase">Purchase</option>
+            <option value="Maintenance">Maintenance</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
         <div><label>From</label><input type="date" id="reportFrom"></div>
         <div><label>To</label><input type="date" id="reportTo"></div>
       </div>
@@ -799,7 +808,6 @@ async function loadStaffRequests(){
     const snap = await getDocs(collection(db, CONFIG.COLLECTION));
     let rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     
-    // Improved robust matching so staff can see their requests accurately
     const currentLower = (currentUsername || '').toLowerCase();
     rows = rows.filter(r => {
       const subBy = (r.submittedBy || '').toLowerCase();
@@ -850,12 +858,14 @@ async function loadReportStats(){
   document.getElementById('reportDetailCard').style.display = 'none';
   try{
     const branchVal = document.getElementById('reportBranch').value;
+    const typeVal = document.getElementById('reportType').value;
     const from = document.getElementById('reportFrom').value;
     const to = document.getElementById('reportTo').value;
     const snap = await getDocs(collection(db, CONFIG.COLLECTION));
     reportRows = snap.docs.map(d => d.data());
 
     if(branchVal) reportRows = reportRows.filter(r => r.branch === branchVal);
+    if(typeVal) reportRows = reportRows.filter(r => (r.requestType || 'Purchase') === typeVal);
     if(from) reportRows = reportRows.filter(r => r.date >= from);
     if(to) reportRows = reportRows.filter(r => r.date <= to);
 
@@ -872,6 +882,7 @@ async function loadReportStats(){
 document.getElementById('reportApplyBtn').addEventListener('click', loadReportStats);
 document.getElementById('reportClearBtn').addEventListener('click', ()=>{
   document.getElementById('reportBranch').value = '';
+  document.getElementById('reportType').value = '';
   document.getElementById('reportFrom').value = '';
   document.getElementById('reportTo').value = '';
   loadReportStats();
