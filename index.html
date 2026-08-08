@@ -87,7 +87,8 @@
 
   .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;}
   table{width:100%;border-collapse:collapse;font-size:12.5px;}
-  th{background:var(--green);color:var(--beige);text-align:left;padding:9px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
+  th{background:var(--green);color:var(--beige);text-align:left;padding:9px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;cursor:pointer;user-select:none;}
+  th:hover{background:var(--green-deep);color:var(--accent-light);}
   td{padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;}
   tr:last-child td{border-bottom:none;}
   .pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
@@ -98,11 +99,11 @@
   .pill.urgency-high{background:var(--alert-bg);color:var(--alert);}
   .edit-btn{background:none;border:none;color:var(--accent);cursor:pointer;font-size:12px;font-weight:700;text-decoration:underline;font-family:Georgia,serif;}
 
-  .admin-filters{display:flex;gap:10px;margin:0 16px 14px;flex-wrap:wrap;}
-  .admin-filters select{border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:8px 12px;font-size:13px;font-family:Georgia,serif;color:var(--green);}
+  .admin-filters{display:flex;gap:10px;margin:0 16px 14px;flex-wrap:wrap;align-items:center;}
+  .admin-filters select{border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:8px 12px;font-size:13px;font-family:Georgia,serif;color:var(--green);width:auto;}
   .name-tag{background:var(--beige-2);border:1px solid var(--line);border-radius:20px;padding:6px 10px 6px 14px;font-size:12.5px;display:flex;align-items:center;gap:8px;}
   .name-tag button{background:var(--alert);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;line-height:1;}
-  .photo-link{color:var(--accent);text-decoration:underline;font-weight:700;font-size:12px;}
+  .photo-link{color:var(--accent);text-decoration:underline;font-weight:700;font-size:12px;background:none;border:none;padding:0;cursor:pointer;font-family:Georgia,serif;}
 
   .empty{text-align:center;padding:40px 20px;color:var(--ink-soft);font-size:13.5px;}
   .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--green);color:var(--beige);padding:13px 20px;border-radius:10px;font-size:13.5px;font-weight:700;box-shadow:0 12px 30px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:all .25s;z-index:50;max-width:90%;text-align:center;}
@@ -120,7 +121,6 @@
   .photo-view-box{background:#fff;border-radius:14px;padding:14px;max-width:min(92vw,600px);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.35);}
   .photo-view-box img{max-width:100%;max-height:72vh;border-radius:8px;object-fit:contain;display:block;margin:0 auto;}
   .photo-view-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px;}
-  .photo-link{background:none;border:none;padding:0;cursor:pointer;font-family:Georgia,serif;}
 </style>
 </head>
 <body>
@@ -192,15 +192,35 @@
         <div><label>Requested By</label><input type="text" id="requestedBy" placeholder="Your name"></div>
         <div><label>Reason / Purpose</label><input type="text" id="reason" placeholder="Why is this needed?"></div>
       </div>
-      <div class="row">
-        <div><label>Item Photo 1 (Optional)</label><input type="file" accept="image/*" id="itemPhotoInput1"></div>
-        <div><label>Item Photo 2 (Optional)</label><input type="file" accept="image/*" id="itemPhotoInput2"></div>
+
+      <!-- Dynamic Photo Container with + Button -->
+      <div style="margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <label style="margin:0;">Item Photos (Optional)</label>
+          <button type="button" class="secondary" id="addPhotoFieldBtn" style="padding:4px 10px;font-size:12px;">+ Add Photo</button>
+        </div>
+        <div id="photoInputsContainer" style="display:flex;flex-direction:column;gap:8px;">
+          <div><input type="file" accept="image/*" class="itemPhotoDynamicInput"></div>
+          <div><input type="file" accept="image/*" class="itemPhotoDynamicInput"></div>
+        </div>
       </div>
+
       <div class="row single">
         <div><label>Notes (Optional)</label><textarea id="notes" placeholder="Any additional details..."></textarea></div>
       </div>
 
       <button type="button" class="primary" id="submitRequestBtn">Submit Request →</button>
+    </div>
+
+    <!-- Staff Status Summary Cards -->
+    <div class="card">
+      <h3>My Request Status Summary</h3>
+      <p class="hint">Overview of your submitted requests.</p>
+      <div class="stat-row">
+        <div class="stat-box" id="staffStatBoxTotal"><div class="num" id="staffStatTotal">0</div><div class="lbl">Total Requests</div></div>
+        <div class="stat-box pending" id="staffStatBoxPending"><div class="num" id="staffStatPending">0</div><div class="lbl">Pending</div></div>
+        <div class="stat-box done" id="staffStatBoxDone"><div class="num" id="staffStatDone">0</div><div class="lbl">Done</div></div>
+      </div>
     </div>
 
     <div class="card">
@@ -212,7 +232,17 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Date</th><th>Branch</th><th>Type</th><th>Item</th><th>Qty</th><th>Urgency</th><th>Est. Cost</th><th>Status</th><th>Photo 1</th><th>Photo 2</th></tr>
+            <tr>
+              <th data-sort="date" data-table="staff">Date ↕</th>
+              <th data-sort="branch" data-table="staff">Branch ↕</th>
+              <th data-sort="requestType" data-table="staff">Type ↕</th>
+              <th data-sort="itemName" data-table="staff">Item ↕</th>
+              <th data-sort="quantity" data-table="staff">Qty ↕</th>
+              <th data-sort="urgency" data-table="staff">Urgency ↕</th>
+              <th data-sort="estimatedCost" data-table="staff">Est. Cost ↕</th>
+              <th data-sort="status" data-table="staff">Status ↕</th>
+              <th>Photos</th>
+            </tr>
           </thead>
           <tbody id="staffTbody"></tbody>
         </table>
@@ -253,9 +283,10 @@
         <div><label>From</label><input type="date" id="reportFrom"></div>
         <div><label>To</label><input type="date" id="reportTo"></div>
       </div>
-      <div style="display:flex;gap:10px;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button type="button" class="primary" id="reportApplyBtn">Apply Filter</button>
         <button type="button" class="secondary" id="reportClearBtn">Clear</button>
+        <button type="button" class="secondary" id="reportExportBtn">📥 Export Excel (CSV)</button>
       </div>
     </div>
 
@@ -277,7 +308,19 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Date</th><th>Branch</th><th>Type</th><th>Item</th><th>Qty</th><th>Urgency</th><th>Est. Cost</th><th>Requested By</th><th>Reason</th><th>Status</th><th>Photos</th></tr>
+            <tr>
+              <th data-sort="date" data-table="report">Date ↕</th>
+              <th data-sort="branch" data-table="report">Branch ↕</th>
+              <th data-sort="requestType" data-table="report">Type ↕</th>
+              <th data-sort="itemName" data-table="report">Item ↕</th>
+              <th data-sort="quantity" data-table="report">Qty ↕</th>
+              <th data-sort="urgency" data-table="report">Urgency ↕</th>
+              <th data-sort="estimatedCost" data-table="report">Est. Cost ↕</th>
+              <th data-sort="requestedBy" data-table="report">Requested By ↕</th>
+              <th data-sort="reason" data-table="report">Reason ↕</th>
+              <th data-sort="status" data-table="report">Status ↕</th>
+              <th>Photos</th>
+            </tr>
           </thead>
           <tbody id="reportDetailTbody"></tbody>
         </table>
@@ -341,12 +384,26 @@
       </select>
       <button type="button" class="secondary" id="clearFilterBtn">Clear filters</button>
       <button type="button" class="secondary" id="refreshRequestsBtn">Refresh</button>
+      <button type="button" class="secondary" id="adminExportBtn">📥 Export Excel (CSV)</button>
     </div>
 
     <div class="table-wrap" style="margin:0 16px;">
       <table>
         <thead>
-          <tr><th>Date</th><th>Branch</th><th>Type</th><th>Requested By</th><th>Item</th><th>Qty</th><th>Urgency</th><th>Est. Cost</th><th>Reason</th><th>Status</th><th>Photos</th><th></th></tr>
+          <tr>
+            <th data-sort="date" data-table="admin">Date ↕</th>
+            <th data-sort="branch" data-table="admin">Branch ↕</th>
+            <th data-sort="requestType" data-table="admin">Type ↕</th>
+            <th data-sort="requestedBy" data-table="admin">Requested By ↕</th>
+            <th data-sort="itemName" data-table="admin">Item ↕</th>
+            <th data-sort="quantity" data-table="admin">Qty ↕</th>
+            <th data-sort="urgency" data-table="admin">Urgency ↕</th>
+            <th data-sort="estimatedCost" data-table="admin">Est. Cost ↕</th>
+            <th data-sort="reason" data-table="admin">Reason ↕</th>
+            <th data-sort="status" data-table="admin">Status ↕</th>
+            <th>Photos</th>
+            <th></th>
+          </tr>
         </thead>
         <tbody id="adminTbody"></tbody>
       </table>
@@ -377,18 +434,19 @@
     </div>
     <div class="row single"><div><label>Reason / Purpose</label><input type="text" id="editReason"></div></div>
     <div class="row single"><div><label>Notes</label><textarea id="editNotes"></textarea></div></div>
-    <div class="row">
-      <div>
-        <label>Item Photo 1</label>
-        <div id="editCurrentPhoto1" style="margin-bottom:8px;"></div>
-        <input type="file" accept="image/*" id="editPhotoInput1">
+    
+    <div>
+      <label>Item Photos</label>
+      <div id="editCurrentPhotosContainer" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <label style="margin:0;font-size:11px;">Add More Photos</label>
+        <button type="button" class="secondary" id="editAddPhotoFieldBtn" style="padding:3px 8px;font-size:11px;">+ Add Photo</button>
       </div>
-      <div>
-        <label>Item Photo 2</label>
-        <div id="editCurrentPhoto2" style="margin-bottom:8px;"></div>
-        <input type="file" accept="image/*" id="editPhotoInput2">
+      <div id="editPhotoInputsContainer" style="display:flex;flex-direction:column;gap:8px;">
+        <div><input type="file" accept="image/*" class="editPhotoDynamicInput"></div>
       </div>
     </div>
+
     <div class="edit-actions">
       <button type="button" class="danger" id="deleteRequestBtn">Delete Request</button>
       <div style="display:flex;gap:10px;">
@@ -399,10 +457,18 @@
   </div>
 </div>
 
-<!-- ===================== PHOTO VIEWER MODAL ===================== -->
+<!-- ===================== PHOTO VIEWER MODAL (Multiple gallery) ===================== -->
 <div id="photoViewOverlay">
   <div class="photo-view-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span id="photoCounter" style="font-size:12px;font-weight:700;color:var(--ink-soft);">Photo 1 of 1</span>
+      <div></div>
+    </div>
     <img id="photoViewImg" src="" alt="Item photo">
+    <div style="display:flex;justify-content:center;gap:10px;margin-top:8px;" id="photoNavControls">
+      <button type="button" class="secondary" id="prevPhotoBtn" style="padding:4px 10px;font-size:12px;">◀ Prev</button>
+      <button type="button" class="secondary" id="nextPhotoBtn" style="padding:4px 10px;font-size:12px;">Next ▶</button>
+    </div>
     <div class="photo-view-actions">
       <a class="secondary" id="photoViewDownload" download="item-photo.jpg" href="#" style="text-decoration:none;display:inline-flex;align-items:center;padding:9px 16px;border:1.5px solid var(--line);border-radius:10px;font-size:13px;font-weight:700;color:var(--green);">Download</a>
       <button type="button" class="secondary" id="photoViewCloseBtn">Close</button>
@@ -444,7 +510,7 @@ const CONFIG = {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, collection, addDoc, getDocs, doc, updateDoc, setDoc, deleteDoc,
-  query, serverTimestamp
+  query, where, orderBy, serverTimestamp, limit
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseApp = initializeApp(CONFIG.FIREBASE_CONFIG);
@@ -460,16 +526,140 @@ function showToast(msg, isErr){
 function urgencyClass(u){ return 'urgency-' + (u||'').toLowerCase(); }
 function statusClass(s){ return (s||'Pending').toLowerCase(); }
 
-// ===== PHOTO VIEWER =====
-function openPhotoModal(photoDataUrl){
-  if(!photoDataUrl) return;
-  document.getElementById('photoViewImg').src = photoDataUrl;
-  document.getElementById('photoViewDownload').href = photoDataUrl;
+// ===== DYNAMIC PHOTO FIELDS HANDLER =====
+document.getElementById('addPhotoFieldBtn').addEventListener('click', ()=>{
+  const container = document.getElementById('photoInputsContainer');
+  const div = document.createElement('div');
+  div.innerHTML = '<input type="file" accept="image/*" class="itemPhotoDynamicInput">';
+  container.appendChild(div);
+});
+
+document.getElementById('editAddPhotoFieldBtn').addEventListener('click', ()=>{
+  const container = document.getElementById('editPhotoInputsContainer');
+  const div = document.createElement('div');
+  div.innerHTML = '<input type="file" accept="image/*" class="editPhotoDynamicInput">';
+  container.appendChild(div);
+});
+
+// ===== GLOBAL DATA & SORTING STATES =====
+let staffRows = [];
+let adminRows = [];
+let currentReportDetailRows = [];
+let sortStates = {
+  staff: { column: null, asc: true },
+  admin: { column: null, asc: true },
+  report: { column: null, asc: true }
+};
+
+function sortData(array, column, asc){
+  return [...array].sort((a, b) => {
+    let valA = a[column] !== undefined && a[column] !== null ? String(a[column]).toLowerCase() : '';
+    let valB = b[column] !== undefined && b[column] !== null ? String(b[column]).toLowerCase() : '';
+    
+    if(!isNaN(valA) && !isNaN(valB) && valA !== '' && valB !== ''){
+      valA = Number(valA);
+      valB = Number(valB);
+    }
+
+    if(valA < valB) return asc ? -1 : 1;
+    if(valA > valB) return asc ? 1 : -1;
+    return 0;
+  });
+}
+
+function setupTableSorting(tableType, renderCallback){
+  document.querySelectorAll(`th[data-table="${tableType}"][data-sort]`).forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sort;
+      if(sortStates[tableType].column === col){
+        sortStates[tableType].asc = !sortStates[tableType].asc;
+      } else {
+        sortStates[tableType].column = col;
+        sortStates[tableType].asc = true;
+      }
+      renderCallback();
+    });
+  });
+}
+
+// ===== EXPORT TO CSV FUNCTION =====
+function exportToCSV(dataArray, filename){
+  if(!dataArray || dataArray.length === 0){
+    showToast('No data available to export', true);
+    return;
+  }
+  const headers = ['Date', 'Branch', 'Type', 'Requested By', 'Item Name', 'Quantity', 'Urgency', 'Est. Cost', 'Reason', 'Status', 'Notes'];
+  const csvRows = [headers.join(',')];
+
+  dataArray.forEach(r => {
+    const rowValues = [
+      `"${r.date || ''}"`,
+      `"${r.branch || ''}"`,
+      `"${r.requestType || 'Purchase'}"`,
+      `"${r.requestedBy || ''}"`,
+      `"${(r.itemName || '').replace(/"/g, '""')}"`,
+      `"${r.quantity || ''}"`,
+      `"${r.urgency || ''}"`,
+      `"${r.estimatedCost || ''}"`,
+      `"${(r.reason || '').replace(/"/g, '""')}"`,
+      `"${r.status || 'Pending'}"`,
+      `"${(r.notes || '').replace(/"/g, '""')}"`
+    ];
+    csvRows.push(rowValues.join(','));
+  });
+
+  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast('Excel/CSV Exported successfully!');
+}
+
+// ===== MULTI-PHOTO VIEWER =====
+let currentGalleryPhotos = [];
+let currentPhotoIndex = 0;
+
+function openPhotoGallery(photosArray){
+  if(!photosArray || photosArray.length === 0) return;
+  currentGalleryPhotos = photosArray;
+  currentPhotoIndex = 0;
+  updatePhotoViewerDisplay();
   document.getElementById('photoViewOverlay').classList.add('show');
 }
+
+function updatePhotoViewerDisplay(){
+  const imgEl = document.getElementById('photoViewImg');
+  const downloadEl = document.getElementById('photoViewDownload');
+  const counterEl = document.getElementById('photoCounter');
+  const navControls = document.getElementById('photoNavControls');
+
+  const url = currentGalleryPhotos[currentPhotoIndex];
+  imgEl.src = url;
+  downloadEl.href = url;
+  counterEl.textContent = `Photo ${currentPhotoIndex + 1} of ${currentGalleryPhotos.length}`;
+  navControls.style.display = currentGalleryPhotos.length > 1 ? 'flex' : 'none';
+}
+
+document.getElementById('prevPhotoBtn').addEventListener('click', ()=>{
+  if(currentGalleryPhotos.length <= 1) return;
+  currentPhotoIndex = (currentPhotoIndex - 1 + currentGalleryPhotos.length) % currentGalleryPhotos.length;
+  updatePhotoViewerDisplay();
+});
+
+document.getElementById('nextPhotoBtn').addEventListener('click', ()=>{
+  if(currentGalleryPhotos.length <= 1) return;
+  currentPhotoIndex = (currentPhotoIndex + 1) % currentGalleryPhotos.length;
+  updatePhotoViewerDisplay();
+});
+
 function closePhotoModal(){
   document.getElementById('photoViewOverlay').classList.remove('show');
   document.getElementById('photoViewImg').src = '';
+  currentGalleryPhotos = [];
 }
 document.getElementById('photoViewCloseBtn').addEventListener('click', closePhotoModal);
 document.getElementById('photoViewOverlay').addEventListener('click', (e)=>{
@@ -559,12 +749,6 @@ document.getElementById('staffLoginForm').addEventListener('submit', async (e)=>
   const p = document.getElementById('staffPass').value.trim();
   const errBox = document.getElementById('staffLoginError');
 
-  if(CONFIG.FIREBASE_CONFIG.apiKey.includes("PASTE_YOUR")){
-    errBox.textContent = 'Please set up CONFIG.FIREBASE_CONFIG first';
-    errBox.classList.add('show');
-    return;
-  }
-
   let users, branches;
   try{
     users = await ensureUsersLoaded();
@@ -572,7 +756,6 @@ document.getElementById('staffLoginForm').addEventListener('submit', async (e)=>
   } catch(err){
     errBox.textContent = 'Could not connect — check Firebase config/rules';
     errBox.classList.add('show');
-    console.error('Login load failed:', err);
     return;
   }
 
@@ -609,7 +792,6 @@ document.getElementById('staffLoginForm').addEventListener('submit', async (e)=>
     }
   } catch(err){
     showToast('Could not load data — check Firebase config/rules', true);
-    console.error('Post-login load failed:', err);
   }
 });
 
@@ -659,14 +841,8 @@ document.getElementById('addUserBtn').addEventListener('click', async ()=>{
   const username = document.getElementById('newUsername').value.trim().toLowerCase();
   const password = document.getElementById('newPassword').value.trim();
   const role = document.getElementById('newRole').value;
-  if(!username || !password){
-    showToast('Please fill name and password', true);
-    return;
-  }
-  if(usersList.some(u => u.username === username)){
-    showToast('That username already exists', true);
-    return;
-  }
+  if(!username || !password){ showToast('Please fill name and password', true); return; }
+  if(usersList.some(u => u.username === username)){ showToast('That username already exists', true); return; }
   const btn = document.getElementById('addUserBtn');
   btn.disabled = true; btn.textContent = 'Creating...';
   try{
@@ -720,15 +896,9 @@ function renderBranchFilterOptions(){
 
 document.getElementById('addBranchBtn').addEventListener('click', async ()=>{
   const name = document.getElementById('newBranchName').value.trim();
-  if(!name){
-    showToast('Please enter a branch name', true);
-    return;
-  }
+  if(!name){ showToast('Please enter a branch name', true); return; }
   const id = slugify(name);
-  if(branchesList.some(b => b.id === id)){
-    showToast('That branch already exists', true);
-    return;
-  }
+  if(branchesList.some(b => b.id === id)){ showToast('That branch already exists', true); return; }
   const btn = document.getElementById('addBranchBtn');
   btn.disabled = true; btn.textContent = 'Adding...';
   try{
@@ -758,70 +928,87 @@ document.getElementById('submitRequestBtn').addEventListener('click', async ()=>
   const reason = document.getElementById('reason').value.trim();
   const notes = document.getElementById('notes').value.trim();
 
-  if(!branch){
-    showToast('Please select a branch', true);
-    return;
-  }
-  if(!itemName || !quantity || !requestedBy){
-    showToast('Please fill Item Name, Quantity and Requested By', true);
-    return;
-  }
+  if(!branch){ showToast('Please select a branch', true); return; }
+  if(!itemName || !quantity || !requestedBy){ showToast('Please fill required fields', true); return; }
 
   const btn = document.getElementById('submitRequestBtn');
   btn.disabled = true; btn.textContent = 'Submitting...';
 
   try{
-    const photoFile1 = document.getElementById('itemPhotoInput1').files[0];
-    const photoFile2 = document.getElementById('itemPhotoInput2').files[0];
-    const itemPhoto1 = await compressImage(photoFile1);
-    const itemPhoto2 = await compressImage(photoFile2);
+    const photoFiles = Array.from(document.querySelectorAll('.itemPhotoDynamicInput'))
+      .map(input => input.files[0])
+      .filter(file => file !== undefined);
+
+    const compressedPhotos = [];
+    for(const file of photoFiles){
+      const compressed = await compressImage(file);
+      if(compressed) compressedPhotos.push(compressed);
+    }
 
     await addDoc(collection(db, CONFIG.COLLECTION), {
-      branch,
-      submittedBy: currentUsername,
-      date: todayStr(),
+      branch, submittedBy: currentUsername, date: todayStr(),
       requestType, itemName, quantity, urgency, estimatedCost, requestedBy, reason, notes,
-      itemPhoto1, itemPhoto2,
-      status: 'Pending',
-      createdAt: serverTimestamp()
+      photos: compressedPhotos,
+      status: 'Pending', createdAt: serverTimestamp()
     });
     showToast('Request submitted!');
     ['itemName','quantity','urgency','estimatedCost','reason','notes'].forEach(id=>{
       document.getElementById(id).value = '';
     });
     document.getElementById('requestType').value = 'Purchase';
-    document.getElementById('itemPhotoInput1').value = '';
-    document.getElementById('itemPhotoInput2').value = '';
+    document.getElementById('photoInputsContainer').innerHTML = `
+      <div><input type="file" accept="image/*" class="itemPhotoDynamicInput"></div>
+      <div><input type="file" accept="image/*" class="itemPhotoDynamicInput"></div>
+    `;
     await loadStaffRequests();
   } catch(err){
-    showToast('Could not submit — check connection', true);
+    showToast('Could not submit', true);
   } finally{
     btn.disabled = false; btn.textContent = 'Submit Request →';
   }
 });
 
-// ===== STAFF: LOAD MY OWN SUBMITTED REQUESTS =====
+// ===== STAFF: LOAD MY OWN REQUESTS =====
 async function loadStaffRequests(){
   const tbody = document.getElementById('staffTbody');
-  tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Loading…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Loading…</td></tr>';
   try{
-    const snap = await getDocs(collection(db, CONFIG.COLLECTION));
-    let rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const q = query(collection(db, CONFIG.COLLECTION), where('submittedBy','==',currentUsername), orderBy('createdAt','desc'), limit(100));
+    const snap = await getDocs(q);
+    staffRows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     
-    const currentLower = (currentUsername || '').toLowerCase();
-    rows = rows.filter(r => {
-      const subBy = (r.submittedBy || '').toLowerCase();
-      const reqBy = (r.requestedBy || '').toLowerCase();
-      return (subBy && subBy === currentLower) || (reqBy && reqBy === currentLower) || (!subBy && !reqBy);
-    });
+    // Update Staff Summary Stats
+    const totalCount = staffRows.length;
+    const doneCount = staffRows.filter(r => (r.status || 'Pending') === 'Done').length;
+    const pendingCount = totalCount - doneCount;
 
-    rows.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    document.getElementById('staffStatTotal').textContent = totalCount;
+    document.getElementById('staffStatPending').textContent = pendingCount;
+    document.getElementById('staffStatDone').textContent = doneCount;
 
-    if(rows.length === 0){
-      tbody.innerHTML = '<tr><td colspan="10" class="empty">No requests found.</td></tr>';
-      return;
+    renderStaffTable();
+  } catch(err){
+    tbody.innerHTML = '<tr><td colspan="9" class="empty">Could not load.</td></tr>';
+  }
+}
+
+function renderStaffTable(){
+  const tbody = document.getElementById('staffTbody');
+  let data = [...staffRows];
+  const { column, asc } = sortStates.staff;
+  if(column) data = sortData(data, column, asc);
+
+  if(data.length === 0){
+    tbody.innerHTML = '<tr><td colspan="9" class="empty">No requests yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map((r) => {
+    let photosList = r.photos || [];
+    if(photosList.length === 0){
+      if(r.itemPhoto1) photosList.push(r.itemPhoto1);
+      if(r.itemPhoto2) photosList.push(r.itemPhoto2);
     }
-    tbody.innerHTML = rows.map((r,i) => `
+    return `
       <tr>
         <td>${r.date || ''}</td>
         <td>${r.branch || ''}</td>
@@ -831,44 +1018,46 @@ async function loadStaffRequests(){
         <td>${r.urgency ? `<span class="pill ${urgencyClass(r.urgency)}">${r.urgency}</span>` : ''}</td>
         <td>${r.estimatedCost || ''}</td>
         <td><span class="pill ${statusClass(r.status)}">${r.status || 'Pending'}</span></td>
-        <td>${r.itemPhoto1 ? `<button type="button" class="photo-link view-photo-btn" data-idx="${i}" data-photo="1">View 1</button>` : ''}</td>
-        <td>${r.itemPhoto2 ? `<button type="button" class="photo-link view-photo-btn" data-idx="${i}" data-photo="2">View 2</button>` : ''}</td>
+        <td>${photosList.length > 0 ? `<button type="button" class="photo-link view-photos-btn" data-id="${r.id}">View Photos (${photosList.length})</button>` : ''}</td>
       </tr>
-    `).join('');
-    document.querySelectorAll('#staffTbody .view-photo-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const r = rows[Number(btn.dataset.idx)];
-        const pUrl = btn.dataset.photo === '1' ? r.itemPhoto1 : r.itemPhoto2;
-        openPhotoModal(pUrl);
-      });
+    `;
+  }).join('');
+
+  document.querySelectorAll('#staffTbody .view-photos-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const r = staffRows.find(x => x.id === btn.dataset.id);
+      let list = r.photos || [];
+      if(list.length === 0){
+        if(r.itemPhoto1) list.push(r.itemPhoto1);
+        if(r.itemPhoto2) list.push(r.itemPhoto2);
+      }
+      openPhotoGallery(list);
     });
-  } catch(err){
-    tbody.innerHTML = '<tr><td colspan="10" class="empty">Could not load — check connection.</td></tr>';
-  }
+  });
 }
+setupTableSorting('staff', renderStaffTable);
 document.getElementById('staffRefreshBtn').addEventListener('click', loadStaffRequests);
 
-// ===== REPORT =====
+// ===== REPORT (view-only role) =====
 let reportRows = [];
 async function loadReportStats(){
   const totalEl = document.getElementById('statTotal');
   const pendingEl = document.getElementById('statPending');
   const doneEl = document.getElementById('statDone');
   totalEl.textContent = '…'; pendingEl.textContent = '…'; doneEl.textContent = '…';
-  document.getElementById('reportDetailCard').style.display = 'none';
   try{
     const branchVal = document.getElementById('reportBranch').value;
     const typeVal = document.getElementById('reportType').value;
     const from = document.getElementById('reportFrom').value;
     const to = document.getElementById('reportTo').value;
-    const snap = await getDocs(collection(db, CONFIG.COLLECTION));
-    reportRows = snap.docs.map(d => d.data());
-
-    if(branchVal) reportRows = reportRows.filter(r => r.branch === branchVal);
-    if(typeVal) reportRows = reportRows.filter(r => (r.requestType || 'Purchase') === typeVal);
-    if(from) reportRows = reportRows.filter(r => r.date >= from);
-    if(to) reportRows = reportRows.filter(r => r.date <= to);
-
+    const constraints = [];
+    if(branchVal) constraints.push(where('branch','==',branchVal));
+    if(typeVal) constraints.push(where('requestType','==',typeVal));
+    if(from) constraints.push(where('date','>=',from));
+    if(to) constraints.push(where('date','<=',to));
+    const q = constraints.length ? query(collection(db, CONFIG.COLLECTION), ...constraints) : collection(db, CONFIG.COLLECTION);
+    const snap = await getDocs(q);
+    reportRows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     const done = reportRows.filter(r => (r.status || 'Pending') === 'Done').length;
     const pending = reportRows.length - done;
     totalEl.textContent = reportRows.length;
@@ -887,51 +1076,73 @@ document.getElementById('reportClearBtn').addEventListener('click', ()=>{
   document.getElementById('reportTo').value = '';
   loadReportStats();
 });
+document.getElementById('reportExportBtn').addEventListener('click', ()=> exportToCSV(reportRows, 'requests-report.csv'));
 
-function renderReportDetail(filterStatus, boxEl){
-  const rows = filterStatus ? reportRows.filter(r => (r.status || 'Pending') === filterStatus) : reportRows;
+function hideReportDetail(){
+  document.getElementById('reportDetailCard').style.display = 'none';
   document.querySelectorAll('#reportApp .stat-box.clickable').forEach(el => el.classList.remove('active'));
-  if(boxEl) boxEl.classList.add('active');
+}
 
-  const label = filterStatus ? (filterStatus + ' Requests') : 'All Requests';
-  document.getElementById('reportDetailTitle').textContent = `${label} (${rows.length})`;
-
+let activeReportStatusFilter = '';
+function renderReportDetail(filterStatus, boxEl){
+  activeReportStatusFilter = filterStatus;
+  currentReportDetailRows = filterStatus ? reportRows.filter(r => (r.status || 'Pending') === filterStatus) : reportRows;
+  if(boxEl){
+    document.querySelectorAll('#reportApp .stat-box.clickable').forEach(el => el.classList.remove('active'));
+    boxEl.classList.add('active');
+  }
+  document.getElementById('reportDetailTitle').textContent = `${filterStatus || 'All'} Requests (${currentReportDetailRows.length})`;
+  
   const tbody = document.getElementById('reportDetailTbody');
-  if(rows.length === 0){
+  let data = [...currentReportDetailRows];
+  const { column, asc } = sortStates.report;
+  if(column) data = sortData(data, column, asc);
+
+  if(data.length === 0){
     tbody.innerHTML = '<tr><td colspan="11" class="empty">No requests found.</td></tr>';
   } else {
-    tbody.innerHTML = rows.map((r,i) => `
-      <tr>
-        <td>${r.date || ''}</td>
-        <td>${r.branch || ''}</td>
-        <td>${r.requestType || 'Purchase'}</td>
-        <td>${r.itemName || ''}</td>
-        <td>${r.quantity || ''}</td>
-        <td>${r.urgency ? `<span class="pill ${urgencyClass(r.urgency)}">${r.urgency}</span>` : ''}</td>
-        <td>${r.estimatedCost || ''}</td>
-        <td>${r.requestedBy || ''}</td>
-        <td>${r.reason || ''}</td>
-        <td><span class="pill ${statusClass(r.status)}">${r.status || 'Pending'}</span></td>
-        <td>
-          ${r.itemPhoto1 ? `<button type="button" class="photo-link view-photo-btn" data-idx="${i}" data-photo="1">P1</button> ` : ''}
-          ${r.itemPhoto2 ? `<button type="button" class="photo-link view-photo-btn" data-idx="${i}" data-photo="2">P2</button>` : ''}
-        </td>
-      </tr>
-    `).join('');
-    document.querySelectorAll('#reportDetailTbody .view-photo-btn').forEach(btn=>{
+    tbody.innerHTML = data.map((r) => {
+      let list = r.photos || [];
+      if(list.length === 0){
+        if(r.itemPhoto1) list.push(r.itemPhoto1);
+        if(r.itemPhoto2) list.push(r.itemPhoto2);
+      }
+      return `
+        <tr>
+          <td>${r.date || ''}</td>
+          <td>${r.branch || ''}</td>
+          <td>${r.requestType || 'Purchase'}</td>
+          <td>${r.itemName || ''}</td>
+          <td>${r.quantity || ''}</td>
+          <td>${r.urgency ? `<span class="pill ${urgencyClass(r.urgency)}">${r.urgency}</span>` : ''}</td>
+          <td>${r.estimatedCost || ''}</td>
+          <td>${r.requestedBy || ''}</td>
+          <td>${r.reason || ''}</td>
+          <td><span class="pill ${statusClass(r.status)}">${r.status || 'Pending'}</span></td>
+          <td>${list.length > 0 ? `<button type="button" class="photo-link view-photos-btn" data-id="${r.id}">View Photos (${list.length})</button>` : ''}</td>
+        </tr>
+      `;
+    }).join('');
+    document.querySelectorAll('#reportDetailTbody .view-photos-btn').forEach(btn=>{
       btn.addEventListener('click', ()=>{
-        const r = rows[Number(btn.dataset.idx)];
-        openPhotoModal(btn.dataset.photo === '1' ? r.itemPhoto1 : r.itemPhoto2);
+        const r = currentReportDetailRows.find(x => x.id === btn.dataset.id);
+        let list = r.photos || [];
+        if(list.length === 0){
+          if(r.itemPhoto1) list.push(r.itemPhoto1);
+          if(r.itemPhoto2) list.push(r.itemPhoto2);
+        }
+        openPhotoGallery(list);
       });
     });
   }
   document.getElementById('reportDetailCard').style.display = 'block';
 }
+setupTableSorting('report', ()=> renderReportDetail(activeReportStatusFilter, null));
 
 document.getElementById('statBoxTotal').addEventListener('click', function(){ renderReportDetail('', this); });
 document.getElementById('statBoxPending').addEventListener('click', function(){ renderReportDetail('Pending', this); });
 document.getElementById('statBoxDone').addEventListener('click', function(){ renderReportDetail('Done', this); });
-document.getElementById('reportDetailCloseBtn').addEventListener('click', ()=> document.getElementById('reportDetailCard').style.display = 'none');
+document.getElementById('reportDetailCloseBtn').addEventListener('click', hideReportDetail);
 
 // ===== ADMIN: LOAD ALL REQUESTS =====
 async function loadAdminRequests(){
@@ -941,21 +1152,41 @@ async function loadAdminRequests(){
     const branchVal = document.getElementById('branchFilter').value;
     const statusVal = document.getElementById('statusFilter').value;
     const typeVal = document.getElementById('typeFilter').value;
+    const constraints = [];
+    if(branchVal) constraints.push(where('branch','==',branchVal));
+    if(statusVal) constraints.push(where('status','==',statusVal));
+    if(typeVal) constraints.push(where('requestType','==',typeVal));
 
-    const snap = await getDocs(collection(db, CONFIG.COLLECTION));
-    let rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    let q = constraints.length
+      ? query(collection(db, CONFIG.COLLECTION), ...constraints, limit(300))
+      : query(collection(db, CONFIG.COLLECTION), limit(300));
 
-    if(branchVal) rows = rows.filter(r => r.branch === branchVal);
-    if(statusVal) rows = rows.filter(r => (r.status || 'Pending') === statusVal);
-    if(typeVal) rows = rows.filter(r => (r.requestType || 'Purchase') === typeVal);
+    const snap = await getDocs(q);
+    adminRows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderAdminTable();
+  } catch(err){
+    tbody.innerHTML = '<tr><td colspan="12" class="empty">Could not load.</td></tr>';
+  }
+}
 
-    rows.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+function renderAdminTable(){
+  const tbody = document.getElementById('adminTbody');
+  let data = [...adminRows];
+  const { column, asc } = sortStates.admin;
+  if(column) data = sortData(data, column, asc);
 
-    if(rows.length === 0){
-      tbody.innerHTML = '<tr><td colspan="12" class="empty">No requests found.</td></tr>';
-      return;
+  if(data.length === 0){
+    tbody.innerHTML = '<tr><td colspan="12" class="empty">No requests found.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map(r => {
+    let list = r.photos || [];
+    if(list.length === 0){
+      if(r.itemPhoto1) list.push(r.itemPhoto1);
+      if(r.itemPhoto2) list.push(r.itemPhoto2);
     }
-    tbody.innerHTML = rows.map(r => `
+    return `
       <tr>
         <td>${r.date || ''}</td>
         <td>${r.branch || ''}</td>
@@ -967,26 +1198,29 @@ async function loadAdminRequests(){
         <td>${r.estimatedCost || ''}</td>
         <td>${r.reason || ''}</td>
         <td><span class="pill ${statusClass(r.status)}">${r.status || 'Pending'}</span></td>
-        <td>
-          ${r.itemPhoto1 ? `<button type="button" class="photo-link view-photo-btn" data-id="${r.id}" data-photo="1">P1</button> ` : ''}
-          ${r.itemPhoto2 ? `<button type="button" class="photo-link view-photo-btn" data-id="${r.id}" data-photo="2">P2</button>` : ''}
-        </td>
+        <td>${list.length > 0 ? `<button type="button" class="photo-link view-photos-btn" data-id="${r.id}">View Photos (${list.length})</button>` : ''}</td>
         <td><button type="button" class="edit-btn" data-id="${r.id}">Edit</button></td>
       </tr>
-    `).join('');
-    document.querySelectorAll('.edit-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=> openEditModal(rows.find(r=>r.id===btn.dataset.id)));
+    `;
+  }).join('');
+
+  document.querySelectorAll('.edit-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> openEditModal(adminRows.find(r=>r.id===btn.dataset.id)));
+  });
+  document.querySelectorAll('#adminTbody .view-photos-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const r = adminRows.find(x => x.id === btn.dataset.id);
+      let list = r.photos || [];
+      if(list.length === 0){
+        if(r.itemPhoto1) list.push(r.itemPhoto1);
+        if(r.itemPhoto2) list.push(r.itemPhoto2);
+      }
+      openPhotoGallery(list);
     });
-    document.querySelectorAll('#adminTbody .view-photo-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const row = rows.find(r=>r.id===btn.dataset.id);
-        openPhotoModal(btn.dataset.photo === '1' ? row.itemPhoto1 : row.itemPhoto2);
-      });
-    });
-  } catch(err){
-    tbody.innerHTML = '<tr><td colspan="12" class="empty">Could not load.</td></tr>';
-  }
+  });
 }
+setupTableSorting('admin', renderAdminTable);
+
 document.getElementById('refreshRequestsBtn').addEventListener('click', loadAdminRequests);
 document.getElementById('branchFilter').addEventListener('change', loadAdminRequests);
 document.getElementById('statusFilter').addEventListener('change', loadAdminRequests);
@@ -997,15 +1231,20 @@ document.getElementById('clearFilterBtn').addEventListener('click', ()=>{
   document.getElementById('typeFilter').value = '';
   loadAdminRequests();
 });
+document.getElementById('adminExportBtn').addEventListener('click', ()=> exportToCSV(adminRows, 'all-purchase-requests.csv'));
 
 // ===== ADMIN: EDIT MODAL =====
 let editingId = null;
-let editingPhoto1 = "";
-let editingPhoto2 = "";
+let editingExistingPhotos = [];
+
 function openEditModal(row){
   editingId = row.id;
-  editingPhoto1 = row.itemPhoto1 || "";
-  editingPhoto2 = row.itemPhoto2 || "";
+  editingExistingPhotos = [...(row.photos || [])];
+  if(editingExistingPhotos.length === 0){
+    if(row.itemPhoto1) editingExistingPhotos.push(row.itemPhoto1);
+    if(row.itemPhoto2) editingExistingPhotos.push(row.itemPhoto2);
+  }
+
   document.getElementById('editRequestType').value = row.requestType || 'Purchase';
   document.getElementById('editItemName').value = row.itemName || '';
   document.getElementById('editQuantity').value = row.quantity || '';
@@ -1015,34 +1254,51 @@ function openEditModal(row){
   document.getElementById('editStatus').value = row.status || 'Pending';
   document.getElementById('editReason').value = row.reason || '';
   document.getElementById('editNotes').value = row.notes || '';
-  document.getElementById('editPhotoInput1').value = '';
-  document.getElementById('editPhotoInput2').value = '';
+  document.getElementById('editPhotoInputsContainer').innerHTML = '<div><input type="file" accept="image/*" class="editPhotoDynamicInput"></div>';
 
-  document.getElementById('editCurrentPhoto1').innerHTML = editingPhoto1
-    ? `<button type="button" class="photo-link" id="editViewPhoto1">View Photo 1</button>`
-    : '<span style="font-size:12px;color:var(--ink-soft);">No photo</span>';
-  document.getElementById('editCurrentPhoto2').innerHTML = editingPhoto2
-    ? `<button type="button" class="photo-link" id="editViewPhoto2">View Photo 2</button>`
-    : '<span style="font-size:12px;color:var(--ink-soft);">No photo</span>';
-
-  if(editingPhoto1) document.getElementById('editViewPhoto1').addEventListener('click', ()=> openPhotoModal(editingPhoto1));
-  if(editingPhoto2) document.getElementById('editViewPhoto2').addEventListener('click', ()=> openPhotoModal(editingPhoto2));
-
+  renderEditCurrentPhotos();
   document.getElementById('editOverlay').classList.add('show');
 }
+
+function renderEditCurrentPhotos(){
+  const container = document.getElementById('editCurrentPhotosContainer');
+  if(editingExistingPhotos.length === 0){
+    container.innerHTML = '<span style="font-size:12px;color:var(--ink-soft);">No existing photos</span>';
+    return;
+  }
+  container.innerHTML = editingExistingPhotos.map((photo, idx) => `
+    <div style="display:inline-flex;align-items:center;background:var(--beige-2);padding:4px 8px;border-radius:6px;gap:6px;">
+      <button type="button" class="photo-link edit-view-single-photo" data-index="${idx}">Photo ${idx+1}</button>
+      <button type="button" style="background:var(--alert);color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:10px;cursor:pointer;line-height:1;" data-index="${idx}" class="remove-existing-photo-btn">×</button>
+    </div>
+  `).join('');
+
+  document.querySelectorAll('.edit-view-single-photo').forEach(btn=>{
+    btn.addEventListener('click', ()=> openPhotoGallery([editingExistingPhotos[Number(btn.dataset.index)]]));
+  });
+  document.querySelectorAll('.remove-existing-photo-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const idx = Number(btn.dataset.index);
+      editingExistingPhotos.splice(idx, 1);
+      renderEditCurrentPhotos();
+    });
+  });
+}
+
 document.getElementById('cancelEditBtn').addEventListener('click', ()=>{
   document.getElementById('editOverlay').classList.remove('show');
   editingId = null;
 });
 
+// DELETE REQUEST BUTTON
 document.getElementById('deleteRequestBtn').addEventListener('click', async ()=>{
   if(!editingId) return;
-  if(!confirm('Are you sure you want to delete this request permanently?')) return;
+  if(!confirm('Are you sure you want to delete this purchase request permanently?')) return;
   const btn = document.getElementById('deleteRequestBtn');
   btn.disabled = true; btn.textContent = 'Deleting...';
   try{
     await deleteDoc(doc(db, CONFIG.COLLECTION, editingId));
-    showToast('Request deleted!');
+    showToast('Request deleted successfully');
     document.getElementById('editOverlay').classList.remove('show');
     editingId = null;
     await loadAdminRequests();
@@ -1058,10 +1314,17 @@ document.getElementById('saveEditBtn').addEventListener('click', async ()=>{
   const btn = document.getElementById('saveEditBtn');
   btn.disabled = true; btn.textContent = 'Saving...';
   try{
-    const file1 = document.getElementById('editPhotoInput1').files[0];
-    const file2 = document.getElementById('editPhotoInput2').files[0];
-    const newPhoto1 = file1 ? await compressImage(file1) : editingPhoto1;
-    const newPhoto2 = file2 ? await compressImage(file2) : editingPhoto2;
+    const newFiles = Array.from(document.querySelectorAll('.editPhotoDynamicInput'))
+      .map(input => input.files[0])
+      .filter(file => file !== undefined);
+
+    const newlyCompressed = [];
+    for(const file of newFiles){
+      const compressed = await compressImage(file);
+      if(compressed) newlyCompressed.push(compressed);
+    }
+
+    const finalPhotos = [...editingExistingPhotos, ...newlyCompressed];
 
     await updateDoc(doc(db, CONFIG.COLLECTION, editingId), {
       requestType: document.getElementById('editRequestType').value,
@@ -1073,8 +1336,9 @@ document.getElementById('saveEditBtn').addEventListener('click', async ()=>{
       status: document.getElementById('editStatus').value,
       reason: document.getElementById('editReason').value.trim(),
       notes: document.getElementById('editNotes').value.trim(),
-      itemPhoto1: newPhoto1,
-      itemPhoto2: newPhoto2
+      photos: finalPhotos,
+      itemPhoto1: "",
+      itemPhoto2: ""
     });
     showToast('Request updated!');
     document.getElementById('editOverlay').classList.remove('show');
