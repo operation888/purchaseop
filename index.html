@@ -511,20 +511,12 @@ const CONFIG = {
     appId: "1:589926817768:web:5106376c6f3d393b4b4e5d"
   },
 
-  COLLECTION: "purchaseRequests",
+  COLLECTION: "purchaseRequests"
 
-  BRANCH_LOGINS: [
-    { username: "sadyan", password: "10234", branch: "Sadyan branch" },
-    { username: "jamyeen", password: "20456", branch: "Jamyeen branch" },
-    { username: "wadi", password: "30678", branch: "Wadi branch" },
-    { username: "magic", password: "40891", branch: "Magic fair branch" },
-    { username: "fajer", password: "50123", branch: "Fajer branch" },
-    { username: "madina", password: "60345", branch: "Madina branch" },
-    { username: "nugra", password: "70567", branch: "Nugra branch" },
-    { username: "rajhi", password: "80789", branch: "Rajhi branch" }
-  ],
-
-  ADMIN_LOGIN: { username: "admin", password: "op998800" }
+  // Branch names aur user logins (username/password) ab yahan hardcoded
+  // NAHI hain. Ye Firestore ("appBranches" aur "appUsers" collections)
+  // mein already store hain — jab bhi admin panel se naya branch/user
+  // banate ho, wahi seedha Firestore mein save hota hai.
 };
 // ================================================================
 
@@ -710,12 +702,6 @@ async function ensureBranchesLoaded(forceRefresh){
   const snap = await getDocs(collection(db, BRANCHES_COLLECTION));
   let existing = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-  if(existing.length === 0){
-    const defaults = CONFIG.BRANCH_LOGINS.map(b => b.branch);
-    await Promise.all(defaults.map(name => setDoc(doc(db, BRANCHES_COLLECTION, slugify(name)), { name })));
-    existing = defaults.map(name => ({ id: slugify(name), name }));
-  }
-
   branchesList = existing.sort((a,b)=> a.name.localeCompare(b.name));
   return branchesList;
 }
@@ -735,12 +721,6 @@ async function ensureUsersLoaded(forceRefresh){
   if(usersList && !forceRefresh) return usersList;
   const snap = await getDocs(collection(db, USERS_COLLECTION));
   let existing = snap.docs.map(d => d.data());
-
-  if(existing.length === 0){
-    const seedAdmin = { username: CONFIG.ADMIN_LOGIN.username, password: CONFIG.ADMIN_LOGIN.password, role: 'admin' };
-    await setDoc(doc(db, USERS_COLLECTION, seedAdmin.username), seedAdmin);
-    existing = [seedAdmin];
-  }
 
   usersList = existing;
   return usersList;
