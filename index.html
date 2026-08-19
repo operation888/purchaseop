@@ -119,6 +119,8 @@
 
   #photoViewOverlay{position:fixed;inset:0;background:rgba(18,36,25,.85);display:none;align-items:center;justify-content:center;z-index:95;padding:20px;}
   #photoViewOverlay.show{display:flex;}
+  #reasonViewOverlay{position:fixed;inset:0;background:rgba(18,36,25,.85);display:none;align-items:center;justify-content:center;z-index:95;padding:20px;}
+  #reasonViewOverlay.show{display:flex;}
   .photo-view-box{background:#fff;border-radius:14px;padding:14px;max-width:min(92vw,600px);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.35);}
   .photo-view-box img{max-width:100%;max-height:72vh;border-radius:8px;object-fit:contain;display:block;margin:0 auto;}
   .photo-view-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px;}
@@ -497,6 +499,19 @@
   </div>
 </div>
 
+<!-- ===================== REASON VIEWER MODAL ===================== -->
+<div id="reasonViewOverlay">
+  <div class="photo-view-box" style="max-width:420px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span style="font-size:12px;font-weight:700;color:var(--ink-soft);">Reason / Purpose</span>
+    </div>
+    <div id="reasonViewText" style="font-size:14px;line-height:1.5;color:var(--ink);white-space:pre-wrap;padding:6px 2px 14px;">—</div>
+    <div class="photo-view-actions">
+      <button type="button" class="secondary" id="reasonViewCloseBtn">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -641,6 +656,19 @@ function renderLinksCell(r){
   if(r.itemLink2) linksHtml.push(`<a href="${r.itemLink2}" target="_blank" class="photo-link">Link 2</a>`);
   return linksHtml.length > 0 ? linksHtml.join(' | ') : '<span style="color:var(--ink-soft);font-size:11px;">—</span>';
 }
+
+// ===== REASON VIEWER =====
+function openReasonModal(text){
+  document.getElementById('reasonViewText').textContent = text && text.trim() ? text : '(No reason provided)';
+  document.getElementById('reasonViewOverlay').classList.add('show');
+}
+function closeReasonModal(){
+  document.getElementById('reasonViewOverlay').classList.remove('show');
+}
+document.getElementById('reasonViewCloseBtn').addEventListener('click', closeReasonModal);
+document.getElementById('reasonViewOverlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'reasonViewOverlay') closeReasonModal();
+});
 
 // ===== MULTI-PHOTO VIEWER =====
 let currentGalleryPhotos = [];
@@ -1182,13 +1210,19 @@ function renderReportDetail(filterStatus, boxEl){
           <td>${r.urgency ? `<span class="pill ${urgencyClass(r.urgency)}">${r.urgency}</span>` : ''}</td>
           <td>${r.estimatedCost || ''}</td>
           <td>${r.requestedBy || ''}</td>
-          <td>${r.reason || ''}</td>
+          <td>${r.reason ? `<button type="button" class="photo-link view-reason-btn" data-id="${r.id}">View</button>` : ''}</td>
           <td><span class="pill ${statusClass(r.status)}">${r.status || 'Pending'}</span></td>
           <td>${list.length > 0 ? `<button type="button" class="photo-link view-photos-btn" data-id="${r.id}">View Photos (${list.length})</button>` : ''}</td>
           <td>${renderLinksCell(r)}</td>
         </tr>
       `;
     }).join('');
+    document.querySelectorAll('#reportDetailTbody .view-reason-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const r = currentReportDetailRows.find(x => x.id === btn.dataset.id);
+        openReasonModal(r.reason);
+      });
+    });
     document.querySelectorAll('#reportDetailTbody .view-photos-btn').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const r = currentReportDetailRows.find(x => x.id === btn.dataset.id);
@@ -1262,7 +1296,7 @@ function renderAdminTable(){
         <td>${r.quantity || ''}</td>
         <td>${r.urgency ? `<span class="pill ${urgencyClass(r.urgency)}">${r.urgency}</span>` : ''}</td>
         <td>${r.estimatedCost || ''}</td>
-        <td>${r.reason || ''}</td>
+        <td>${r.reason ? `<button type="button" class="photo-link view-reason-btn" data-id="${r.id}">View</button>` : ''}</td>
         <td><span class="pill ${statusClass(r.status)}">${r.status || 'Pending'}</span></td>
         <td>${list.length > 0 ? `<button type="button" class="photo-link view-photos-btn" data-id="${r.id}">View Photos (${list.length})</button>` : ''}</td>
         <td>${renderLinksCell(r)}</td>
@@ -1273,6 +1307,12 @@ function renderAdminTable(){
 
   document.querySelectorAll('.edit-btn').forEach(btn=>{
     btn.addEventListener('click', ()=> openEditModal(adminRows.find(r=>r.id===btn.dataset.id)));
+  });
+  document.querySelectorAll('#adminTbody .view-reason-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const r = adminRows.find(x => x.id === btn.dataset.id);
+      openReasonModal(r.reason);
+    });
   });
   document.querySelectorAll('#adminTbody .view-photos-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
