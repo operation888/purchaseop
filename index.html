@@ -1,410 +1,1546 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Cashier Misuse Monitor Report</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Purchase Requests — Operations</title>
 <style>
-:root {
-  --bg:#fdf6f6; --bg2:#f5e8e9; --surface:#203b36; --surface2:#172e2a;
-  --card:#ffffff; --border:#e8c8ca; --border-g:#2a4e48;
-  --accent:#203b36; --gold:#e07c82;
-  --text-dark:#1a1010; --text-mid:#3a2828; --text-light:#fdf6f6; --text-muted:#9a6a6e;
-  --font:'Georgia','Times New Roman',serif;
-}
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--text-dark);font-family:var(--font);min-height:100vh;}
-.header{background:var(--surface);border-bottom:3px solid var(--gold);padding:18px 36px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99;}
-.header-left{display:flex;align-items:center;gap:16px;}
-.header-icon{width:44px;height:44px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;}
-.header-title{font-family:var(--font);font-size:1.25rem;font-weight:700;color:var(--bg);}
-.header-sub{font-family:var(--font);font-size:0.75rem;color:#f0a8ac;font-style:italic;margin-top:2px;}
-.header-right{display:flex;align-items:center;gap:14px;}
-.sync-info{font-family:var(--font);font-size:0.72rem;color:#f0a8ac;font-style:italic;}
-.btn-refresh{background:var(--gold);border:2px solid #e07c82;color:#fff;padding:8px 20px;border-radius:6px;font-family:var(--font);font-size:0.82rem;font-weight:700;cursor:pointer;}
-.btn-refresh:hover{background:#c9606a;}
-.main{padding:28px 36px;max-width:1440px;margin:0 auto;}
-.section-title{font-family:var(--font);font-size:0.8rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;font-style:italic;}
-.filter-bar{background:var(--card);border:1px solid var(--border);border-top:3px solid var(--accent);border-radius:8px;padding:18px 22px;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;margin-bottom:24px;box-shadow:0 2px 8px rgba(32,59,54,0.08);}
-.filter-group{display:flex;flex-direction:column;gap:5px;}
-.filter-label{font-family:var(--font);font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;font-style:italic;}
-.filter-input,.filter-select{background:var(--bg2);border:1px solid var(--border);color:var(--text-dark);padding:8px 13px;border-radius:6px;font-family:var(--font);font-size:0.85rem;min-width:155px;outline:none;}
-.filter-input:focus,.filter-select:focus{border-color:var(--accent);background:#fff;}
-.btn-apply{background:var(--accent);border:none;color:#fff;padding:9px 24px;border-radius:6px;font-family:var(--font);font-size:0.85rem;font-weight:700;cursor:pointer;}
-.btn-clear{background:transparent;border:1px solid var(--border);color:var(--text-muted);padding:9px 18px;border-radius:6px;font-family:var(--font);font-size:0.85rem;cursor:pointer;}
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
-.kpi-card{border-radius:8px;padding:22px 24px;box-shadow:0 2px 10px rgba(32,59,54,0.1);transition:transform 0.2s;}
-.kpi-card:hover{transform:translateY(-3px);}
-.kpi-card.beige{background:var(--card);border:1px solid var(--border);border-top:4px solid var(--accent);}
-.kpi-card.beige .kpi-label{color:var(--text-muted);}
-.kpi-card.beige .kpi-value{color:var(--accent);}
-.kpi-card.beige .kpi-sub{color:var(--text-muted);}
-.kpi-card.green-card{background:var(--surface);border:1px solid var(--border-g);border-top:4px solid var(--gold);}
-.kpi-card.green-card .kpi-label{color:#f0a8ac;}
-.kpi-card.green-card .kpi-value{color:var(--bg);}
-.kpi-card.green-card .kpi-sub{color:#f0a8ac;}
-.kpi-label{font-family:var(--font);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.8px;font-style:italic;}
-.kpi-value{font-family:var(--font);font-size:2.6rem;font-weight:700;line-height:1.1;margin:8px 0 4px;}
-.kpi-sub{font-family:var(--font);font-size:0.72rem;font-style:italic;}
-.chart-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-bottom:24px;}
-.chart-card{background:var(--card);border:1px solid var(--border);border-top:3px solid var(--accent);border-radius:8px;padding:22px;box-shadow:0 2px 8px rgba(32,59,54,0.08);}
-.chart-wrap{position:relative;height:230px;}
-.staff-card{background:var(--surface);border:1px solid var(--border-g);border-top:3px solid var(--gold);border-radius:8px;padding:22px;margin-bottom:24px;}
-.staff-card .section-title{color:#f0a8ac;}
-.bar-row{display:flex;align-items:center;gap:14px;margin-bottom:10px;}
-.bar-name{font-family:var(--font);font-size:0.82rem;color:var(--text-light);min-width:180px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.bar-track{flex:1;background:rgba(253,246,246,0.15);border-radius:4px;height:10px;overflow:hidden;}
-.bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--gold),#e8a020);transition:width 1s;}
-.bar-count{font-family:var(--font);font-size:0.82rem;color:var(--gold);min-width:26px;text-align:right;font-weight:700;}
-.table-card{background:var(--card);border:1px solid var(--border);border-top:3px solid var(--accent);border-radius:8px;overflow:hidden;}
-.table-header{background:var(--surface);padding:16px 22px;display:flex;align-items:center;border-bottom:2px solid var(--gold);}
-.table-title{font-family:var(--font);font-size:0.88rem;font-weight:700;color:var(--text-light);display:flex;align-items:center;gap:10px;}
-.count-pill{background:var(--gold);color:#fff;font-size:0.7rem;padding:2px 10px;border-radius:20px;font-weight:700;}
-.table-wrap{overflow-x:auto;}
-table{width:100%;border-collapse:collapse;}
-thead tr{background:var(--bg2);}
-th{padding:12px 16px;text-align:left;font-family:var(--font);font-size:0.72rem;font-weight:700;color:var(--text-mid);text-transform:uppercase;font-style:italic;border-bottom:2px solid var(--border);white-space:nowrap;}
-tbody tr{border-bottom:1px solid var(--border);transition:background 0.15s;}
-tbody tr:last-child{border-bottom:none;}
-tbody tr:hover{background:#f0e0e2;}
-td{padding:12px 16px;font-family:var(--font);font-size:0.83rem;color:var(--text-dark);}
-td.td-staff{font-weight:700;font-size:0.88rem;}
-td.td-branch{color:var(--accent);font-style:italic;}
-td.td-date{color:var(--text-muted);}
-td.td-inv{color:var(--text-muted);font-size:0.78rem;}
-td.td-note{font-size:0.8rem;font-style:italic;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-td.td-num{color:var(--border);font-size:0.75rem;}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:4px;font-size:0.7rem;font-family:var(--font);font-weight:700;}
-.badge.video{background:rgba(32,59,54,0.1);color:var(--accent);border:1px solid rgba(32,59,54,0.2);}
-.badge.other{background:var(--bg2);color:var(--text-muted);border:1px solid var(--border);}
-.state-box{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:60px 20px;color:var(--text-muted);text-align:center;}
-.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
-.state-msg{font-family:var(--font);font-size:0.9rem;font-style:italic;}
-.state-msg.err{color:#8b1a1a;}
-@keyframes spin{to{transform:rotate(360deg);}}
-#lockScreen{position:fixed;top:0;left:0;width:100%;height:100%;background:#203b36;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;}
-.lock-box{background:#172e2a;border:2px solid #e07c82;border-radius:14px;padding:42px 48px;display:flex;flex-direction:column;align-items:center;gap:18px;min-width:320px;box-shadow:0 8px 40px rgba(0,0,0,0.4);}
-.lock-icon{font-size:2.8rem;}
-.lock-title{font-family:Georgia,serif;font-size:1.3rem;font-weight:700;color:#fdf6f6;text-align:center;}
-.lock-sub{font-family:Georgia,serif;font-size:0.78rem;color:#f0a8ac;font-style:italic;text-align:center;margin-top:-8px;}
-.lock-input{width:100%;padding:11px 16px;border-radius:7px;border:1.5px solid #2a4e48;font-family:Georgia,serif;font-size:1rem;background:#203b36;color:#fdf6f6;outline:none;text-align:center;}
-.lock-input:focus{border-color:#e07c82;}
-.lock-btn{width:100%;padding:11px;background:#e07c82;border:none;color:#fff;border-radius:7px;font-family:Georgia,serif;font-size:1rem;font-weight:700;cursor:pointer;}
-.lock-btn:hover{background:#c9606a;}
-.lock-error{font-family:Georgia,serif;font-size:0.82rem;color:#ff8080;display:none;}
-@media(max-width:960px){.main{padding:16px;}.kpi-row{grid-template-columns:repeat(2,1fr);}.chart-grid{grid-template-columns:1fr;}.header{padding:14px 16px;}}
-@media(max-width:520px){.kpi-row{grid-template-columns:1fr 1fr;}.kpi-value{font-size:2rem;}.header-title{font-size:1rem;}}
+  :root{
+    --green:#1F3B2C;
+    --green-deep:#122419;
+    --beige:#F6F1E4;
+    --beige-2:#EAE1C6;
+    --accent:#8A7B4E;
+    --accent-light:#C9B584;
+    --alert:#7A2E2E;
+    --alert-bg:#F1E1DD;
+    --ok:#2E5C43;
+    --ok-bg:#E3ECE3;
+    --pending:#8A6D1F;
+    --pending-bg:#F3ECD6;
+    --line:#D9CDA9;
+    --ink-soft:#5C5540;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--beige);color:var(--green);font-family:Georgia,'Times New Roman',serif;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 0 60px;}
+  header{background:var(--green);color:var(--beige);padding:28px 24px 34px;position:relative;overflow:hidden;}
+  header::after{content:"";position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,var(--accent-light) 0%, transparent 70%);opacity:.30;}
+  .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-light);font-weight:700;margin-bottom:6px;}
+  h1{font-size:28px;margin:0 0 6px;line-height:1.1;}
+  header p{margin:0;color:var(--beige-2);font-size:14px;max-width:560px;}
+
+  #loginOverlay{position:fixed;inset:0;background:var(--green);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
+  .login-card{background:var(--beige);border-radius:16px;padding:34px 28px;max-width:380px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.3);text-align:center;}
+  .login-card h2{font-size:22px;margin:0 0 4px;color:var(--green);}
+  .login-card p.sub{font-size:13px;color:var(--ink-soft);margin:0 0 22px;}
+  .login-card label{display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;text-align:left;}
+  .login-card input{width:100%;border:1.5px solid var(--line);background:var(--beige-2);border-radius:10px;padding:11px 12px;font-size:14.5px;font-family:Georgia,serif;color:var(--green);margin-bottom:14px;outline:none;}
+  .login-card input:focus{border-color:var(--accent);}
+  .login-btn{width:100%;background:var(--green);color:var(--beige);border:none;border-radius:10px;padding:13px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:Georgia,serif;}
+  .login-btn:hover{background:var(--green-deep);}
+  .login-error{display:none;background:var(--alert-bg);color:var(--alert);border:1px solid #D9B9B4;border-radius:8px;padding:9px 12px;font-size:12.5px;margin-bottom:14px;}
+  .login-error.show{display:block;}
+  .login-panel{display:none;}
+  .login-panel.show{display:block;}
+  #staffApp,#adminApp,#reportApp{display:none;}
+
+  .stat-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:6px;}
+  @media(max-width:640px){.stat-row{grid-template-columns:1fr;}}
+  .stat-box{background:var(--beige-2);border:1px solid var(--line);border-radius:14px;padding:18px;text-align:center;}
+  .stat-box .num{font-size:32px;font-weight:700;color:var(--green);line-height:1;margin-bottom:6px;}
+  .stat-box .lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);font-weight:700;}
+  .stat-box .sub-amt{font-size:12px;color:var(--ink-soft);margin-top:4px;font-weight:600;}
+  .stat-box.pending .num{color:var(--pending);}
+  .stat-box.done .num{color:var(--ok);}
+  .stat-box.clickable{cursor:pointer;transition:transform .15s,box-shadow .15s;}
+  .stat-box.clickable:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(31,59,44,.14);}
+  .stat-box.clickable.active{outline:2px solid var(--accent);}
+
+  .session-bar{display:flex;align-items:center;justify-content:space-between;background:var(--green-deep);color:var(--beige-2);padding:9px 16px;font-size:12.5px;}
+  .session-bar button{background:transparent;border:1px solid var(--beige-2);color:var(--beige-2);border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:Georgia,serif;}
+  .session-bar button:hover{background:var(--beige-2);color:var(--green-deep);}
+
+  .card{background:#fff;margin:-18px 16px 18px;border-radius:16px;box-shadow:0 10px 30px rgba(31,59,44,.10);border:1px solid var(--line);overflow:hidden;position:relative;z-index:1;padding:20px 22px;}
+  .card h3{margin:0 0 4px;font-size:16px;color:var(--accent);}
+  .card p.hint{margin:0 0 16px;font-size:12.5px;color:var(--ink-soft);}
+
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+  .row.three{grid-template-columns:1fr 1fr 1fr;}
+  .row.single{grid-template-columns:1fr;}
+  @media(max-width:640px){.row,.row.three{grid-template-columns:1fr;}}
+
+  label{display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
+  input[type=text],input[type=number],input[type=date],input[type=url],select,textarea{
+    width:100%;border:1.5px solid var(--line);background:var(--beige-2);border-radius:10px;
+    padding:10px 12px;font-size:14.5px;font-family:Georgia,serif;color:var(--green);outline:none;
+  }
+  textarea{resize:vertical;min-height:60px;}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+
+  .multiselect{position:relative;}
+  .multiselect-toggle{
+    width:100%;text-align:left;border:1.5px solid var(--line);background:var(--beige-2);border-radius:10px;
+    padding:10px 12px;font-size:14.5px;font-family:Georgia,serif;color:var(--green);cursor:pointer;
+    display:flex;justify-content:space-between;align-items:center;gap:8px;
+  }
+  .multiselect-toggle::after{content:'▾';font-size:12px;color:var(--ink-soft);}
+  .multiselect-toggle span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .multiselect.open .multiselect-toggle{border-color:var(--accent);}
+  .multiselect-panel{
+    display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:20;
+    background:var(--beige-2);border:1.5px solid var(--line);border-radius:10px;
+    max-height:240px;overflow-y:auto;box-shadow:0 8px 20px rgba(18,36,25,.18);
+  }
+  .multiselect.open .multiselect-panel{display:block;}
+  .multiselect-option{display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:14px;color:var(--green);cursor:pointer;border-bottom:1px solid var(--line);}
+  .multiselect-option:last-child{border-bottom:none;}
+  .multiselect-option:hover{background:var(--beige);}
+  .multiselect-option input{width:auto;margin:0;}
+
+  button.primary{background:var(--green);color:var(--beige);border:none;border-radius:10px;padding:12px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:Georgia,serif;}
+  button.primary:hover{background:var(--green-deep);}
+  button.primary:disabled{opacity:.6;cursor:not-allowed;}
+  button.secondary{background:#fff;border:1.5px solid var(--line);color:var(--green);border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:Georgia,serif;}
+  button.secondary:hover{border-color:var(--accent);}
+  button.danger{background:var(--alert);color:#fff;border:none;border-radius:10px;padding:12px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:Georgia,serif;}
+  button.danger:hover{opacity:.9;}
+
+  .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th{background:var(--green);color:var(--beige);text-align:left;padding:9px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;cursor:pointer;user-select:none;}
+  th:hover{background:var(--green-deep);color:var(--accent-light);}
+  td{padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  .pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
+  .pill.pending{background:var(--pending-bg);color:var(--pending);}
+  .pill.done{background:var(--ok-bg);color:var(--ok);}
+  .pill.urgency-low{background:var(--ok-bg);color:var(--ok);}
+  .pill.urgency-medium{background:var(--pending-bg);color:var(--pending);}
+  .pill.urgency-high{background:var(--alert-bg);color:var(--alert);}
+  .edit-btn{background:none;border:none;color:var(--accent);cursor:pointer;font-size:12px;font-weight:700;text-decoration:underline;font-family:Georgia,serif;}
+
+  .admin-filters{display:flex;gap:10px;margin:0 16px 14px;flex-wrap:wrap;align-items:center;}
+  .admin-filters select{border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:8px 12px;font-size:13px;font-family:Georgia,serif;color:var(--green);width:auto;}
+  .name-tag{background:var(--beige-2);border:1px solid var(--line);border-radius:20px;padding:6px 10px 6px 14px;font-size:12.5px;display:flex;align-items:center;gap:8px;}
+  .name-tag button{background:var(--alert);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;line-height:1;}
+  .photo-link{color:var(--accent);text-decoration:underline;font-weight:700;font-size:12px;background:none;border:none;padding:0;cursor:pointer;font-family:Georgia,serif;}
+
+  .empty{text-align:center;padding:40px 20px;color:var(--ink-soft);font-size:13.5px;}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--green);color:var(--beige);padding:13px 20px;border-radius:10px;font-size:13.5px;font-weight:700;box-shadow:0 12px 30px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:all .25s;z-index:50;max-width:90%;text-align:center;}
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+  .toast.err{background:var(--alert);}
+
+  #editOverlay{position:fixed;inset:0;background:rgba(18,36,25,.55);display:none;align-items:center;justify-content:center;z-index:90;padding:20px;}
+  #editOverlay.show{display:flex;}
+  .edit-modal{background:#fff;border-radius:16px;padding:26px;max-width:460px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto;}
+  .edit-modal h3{margin:0 0 16px;color:var(--accent);}
+  .edit-actions{display:flex;gap:10px;margin-top:16px;align-items:center;justify-content:space-between;}
+
+  #photoViewOverlay{position:fixed;inset:0;background:rgba(18,36,25,.85);display:none;align-items:center;justify-content:center;z-index:95;padding:20px;}
+  #photoViewOverlay.show{display:flex;}
+  #reasonViewOverlay{position:fixed;inset:0;background:rgba(18,36,25,.85);display:none;align-items:center;justify-content:center;z-index:95;padding:20px;}
+  #reasonViewOverlay.show{display:flex;}
+  .photo-view-box{background:#fff;border-radius:14px;padding:14px;max-width:min(92vw,600px);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.35);}
+  .photo-view-box img{max-width:100%;max-height:72vh;border-radius:8px;object-fit:contain;display:block;margin:0 auto;}
+  .photo-view-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px;}
 </style>
 </head>
 <body>
 
-<div id="lockScreen">
-  <div class="lock-box">
-    <div class="lock-icon">🔒</div>
-    <div class="lock-title">Cashier Misuse Monitor</div>
-    <div class="lock-sub">made by Mr. Neel</div>
-    <input class="lock-input" id="passInput" type="password" placeholder="Enter password" onkeydown="if(event.key==='Enter') doLogin()"/>
-    <button class="lock-btn" onclick="doLogin()">Login</button>
-    <div class="lock-error" id="passError">❌ Wrong password. Try again.</div>
+<!-- ===================== LOGIN ===================== -->
+<div id="loginOverlay">
+  <div class="login-card">
+    <div class="login-panel show" id="staffPanel">
+      <h2>Purchase Requests</h2>
+      <p class="sub">Sign in to continue</p>
+      <div class="login-error" id="staffLoginError">Incorrect username or password.</div>
+      <form id="staffLoginForm">
+        <label>Username</label>
+        <input type="text" id="staffUser" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" required>
+        <label>Password</label>
+        <input type="password" id="staffPass" autocomplete="current-password" required>
+        <button type="submit" class="login-btn">Sign In</button>
+      </form>
+    </div>
   </div>
 </div>
 
-<header class="header">
-  <div class="header-left">
-    <div class="header-icon">⚠️</div>
-    <div>
-      <div class="header-title">Cashier Misuse Monitor Report</div>
-      <div class="header-sub">made by Mr. Neel</div>
-    </div>
+<!-- ===================== STAFF APP ===================== -->
+<div id="staffApp">
+  <div class="session-bar">
+    <span>Logged in as: <strong id="sessionBranchName">—</strong></span>
+    <button type="button" id="staffLogoutBtn">Log Out</button>
   </div>
-  <div class="header-right">
-    <span class="sync-info" id="syncInfo">Loading...</span>
-    <button class="btn-refresh" onclick="loadData()">↻ Refresh</button>
-  </div>
-</header>
+  <div class="wrap">
+    <header>
+      <div class="eyebrow">Staff Use Only</div>
+      <h1>Purchase Requests</h1>
+      <p>Submit a request for tools or supplies — Operations will review, purchase, and provide it to the warehouse.</p>
+    </header>
 
-<div class="main">
-  <div class="filter-bar">
-    <div class="filter-group">
-      <span class="filter-label">Staff Name</span>
-      <select class="filter-select" id="fStaff"><option value="">All Staff</option></select>
-    </div>
-    <div class="filter-group">
-      <span class="filter-label">Branch</span>
-      <select class="filter-select" id="fBranch"><option value="">All Branches</option></select>
-    </div>
-    <div class="filter-group">
-      <span class="filter-label">Date From</span>
-      <input class="filter-input" id="fFrom" type="text" placeholder="2025-01-01"/>
-    </div>
-    <div class="filter-group">
-      <span class="filter-label">Date To</span>
-      <input class="filter-input" id="fTo" type="text" placeholder="2026-12-31"/>
-    </div>
-    <button class="btn-apply" onclick="applyFilter()">Apply Filter</button>
-    <button class="btn-clear" onclick="clearFilter()">Clear</button>
-  </div>
+    <div class="card">
+      <h3>New Request</h3>
+      <p class="hint">Fill in the details below and submit.</p>
 
-  <div class="kpi-row">
-    <div class="kpi-card beige"><div class="kpi-label">Total Incidents</div><div class="kpi-value" id="kTotal">—</div><div class="kpi-sub">All recorded cases</div></div>
-    <div class="kpi-card green-card"><div class="kpi-label">Staff Involved</div><div class="kpi-value" id="kStaff">—</div><div class="kpi-sub">Unique employees</div></div>
-    <div class="kpi-card beige"><div class="kpi-label">Branches Affected</div><div class="kpi-value" id="kBranch">—</div><div class="kpi-sub">Unique locations</div></div>
-    <div class="kpi-card green-card"><div class="kpi-label">Top Offender</div><div class="kpi-value" id="kTop" style="font-size:1.2rem;padding-top:6px;">—</div><div class="kpi-sub" id="kTopSub">Most incidents</div></div>
-  </div>
+      <div class="row single">
+        <div><label>Branch</label>
+          <div class="multiselect" id="requestBranchMulti">
+            <button type="button" class="multiselect-toggle" id="requestBranchToggle">Select branch(es)</button>
+            <div class="multiselect-panel" id="requestBranchPanel"></div>
+          </div>
+        </div>
+      </div>
+      <div class="row single">
+        <div><label>Request Type</label>
+          <select id="requestType">
+            <option value="Purchase">Purchase</option>
+            <option value="Maintenance">Maintenance</option>
+          </select>
+        </div>
+      </div>
+      <div class="row single">
+        <div><label>Item Name</label><input type="text" id="itemName" placeholder="e.g. Espresso Machine Filter"></div>
+      </div>
+      <div class="row three">
+        <div><label>Quantity</label><input type="number" step="any" id="quantity" placeholder="e.g. 5"></div>
+        <div><label>Urgency</label>
+          <select id="urgency">
+            <option value="">Select</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+          </select>
+        </div>
+        <div><label>Estimated Cost</label><input type="number" step="any" id="estimatedCost" placeholder="e.g. 250"></div>
+      </div>
+      <div class="row">
+        <div><label>Requested By</label><input type="text" id="requestedBy" placeholder="Your name"></div>
+        <div><label>Reason / Purpose</label><input type="text" id="reason" placeholder="Why is this needed?"></div>
+      </div>
 
-  <div class="chart-grid">
-    <div class="chart-card"><div class="section-title">Monthly Trend</div><div class="chart-wrap"><canvas id="chartTrend"></canvas></div></div>
-    <div class="chart-card"><div class="section-title">By Branch</div><div class="chart-wrap"><canvas id="chartBranch"></canvas></div></div>
-  </div>
+      <!-- Dynamic Photo Container with + Button -->
+      <div style="margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <label style="margin:0;">Item Photos (Optional)</label>
+          <button type="button" class="secondary" id="addPhotoFieldBtn" style="padding:4px 10px;font-size:12px;">+ Add Photo</button>
+        </div>
+        <div id="photoInputsContainer" style="display:flex;flex-direction:column;gap:8px;">
+          <div><input type="file" accept="image/*" class="itemPhotoDynamicInput"></div>
+          <div><input type="file" accept="image/*" class="itemPhotoDynamicInput"></div>
+        </div>
+      </div>
 
-  <div class="staff-card">
-    <div class="section-title">Incidents Per Staff Member</div>
-    <div id="staffBars"></div>
-  </div>
+      <!-- Reference Links (1 or 2 optional links) -->
+      <div style="margin-bottom:14px;">
+        <label>Reference Links (Optional - Up to 2 links)</label>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <input type="url" id="itemLink1" placeholder="https://example.com/product-1">
+          <input type="url" id="itemLink2" placeholder="https://example.com/product-2">
+        </div>
+      </div>
 
-  <div class="table-card">
-    <div class="table-header">
-      <div class="table-title">Incident Log <span class="count-pill" id="tableCount">0</span></div>
+      <div class="row single">
+        <div><label>Notes (Optional)</label><textarea id="notes" placeholder="Any additional details..."></textarea></div>
+      </div>
+
+      <button type="button" class="primary" id="submitRequestBtn">Submit Request →</button>
     </div>
-    <div class="table-wrap">
+
+    <!-- Staff Status Summary Cards -->
+    <div class="card">
+      <h3>My Request Status Summary</h3>
+      <p class="hint">Overview of your submitted requests.</p>
+      <div class="stat-row">
+        <div class="stat-box" id="staffStatBoxTotal"><div class="num" id="staffStatTotal">0</div><div class="lbl">Total Requests</div><div class="sub-amt" id="staffStatTotalAmt">Amount: 0</div></div>
+        <div class="stat-box pending" id="staffStatBoxPending"><div class="num" id="staffStatPending">0</div><div class="lbl">Pending</div><div class="sub-amt" id="staffStatPendingAmt">Amount: 0</div></div>
+        <div class="stat-box done" id="staffStatBoxDone"><div class="num" id="staffStatDone">0</div><div class="lbl">Done</div><div class="sub-amt" id="staffStatDoneAmt">Amount: 0</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <h3 style="margin:0;">My Requests & Status</h3>
+        <button type="button" class="secondary" id="staffRefreshBtn">Refresh</button>
+      </div>
+      <p class="hint">Check your submitted requests and their live status below.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-sort="date" data-table="staff">Date ↕</th>
+              <th data-sort="branch" data-table="staff">Branch ↕</th>
+              <th data-sort="requestType" data-table="staff">Type ↕</th>
+              <th data-sort="itemName" data-table="staff">Item ↕</th>
+              <th data-sort="quantity" data-table="staff">Qty ↕</th>
+              <th data-sort="urgency" data-table="staff">Urgency ↕</th>
+              <th data-sort="estimatedCost" data-table="staff">Est. Cost ↕</th>
+              <th data-sort="status" data-table="staff">Status ↕</th>
+              <th>Photos</th>
+              <th>Links</th>
+            </tr>
+          </thead>
+          <tbody id="staffTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== REPORT APP (view-only role) ===================== -->
+<div id="reportApp">
+  <div class="session-bar">
+    <span>Logged in as: <strong id="sessionReportBranchName">—</strong></span>
+    <button type="button" id="reportLogoutBtn">Log Out</button>
+  </div>
+  <div class="wrap">
+    <header>
+      <div class="eyebrow">Report — View Only</div>
+      <h1>Requests Report</h1>
+      <p>See how many requests are pending vs done, filtered by branch, request type, and date.</p>
+    </header>
+
+    <div class="card">
+      <h3>Filters</h3>
+      <p class="hint">Leave blank to include all requests.</p>
+      <div class="row">
+        <div><label>Branch</label>
+          <select id="reportBranch"><option value="">All branches</option></select>
+        </div>
+        <div><label>Type of Request</label>
+          <select id="reportType">
+            <option value="">All types</option>
+            <option value="Purchase">Purchase</option>
+            <option value="Maintenance">Maintenance</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div><label>From</label><input type="date" id="reportFrom"></div>
+        <div><label>To</label><input type="date" id="reportTo"></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button type="button" class="primary" id="reportApplyBtn">Apply Filter</button>
+        <button type="button" class="secondary" id="reportClearBtn">Clear</button>
+        <button type="button" class="secondary" id="reportExportBtn">📥 Export Excel (CSV)</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Summary</h3>
+      <p class="hint">Tap a box below to see the full item details for that group.</p>
+      <div class="stat-row">
+        <div class="stat-box clickable" id="statBoxTotal"><div class="num" id="statTotal">—</div><div class="lbl">Total Requests</div><div class="sub-amt" id="statTotalAmt">Amount: —</div></div>
+        <div class="stat-box pending clickable" id="statBoxPending"><div class="num" id="statPending">—</div><div class="lbl">Pending</div><div class="sub-amt" id="statPendingAmt">Amount: —</div></div>
+        <div class="stat-box done clickable" id="statBoxDone"><div class="num" id="statDone">—</div><div class="lbl">Done</div><div class="sub-amt" id="statDoneAmt">Amount: —</div></div>
+      </div>
+    </div>
+
+    <div class="card" id="reportDetailCard" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <h3 style="margin:0;" id="reportDetailTitle">Requests</h3>
+        <button type="button" class="secondary" id="reportDetailCloseBtn">Close</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-sort="date" data-table="report">Date ↕</th>
+              <th data-sort="branch" data-table="report">Branch ↕</th>
+              <th data-sort="requestType" data-table="report">Type ↕</th>
+              <th data-sort="itemName" data-table="report">Item ↕</th>
+              <th data-sort="quantity" data-table="report">Qty ↕</th>
+              <th data-sort="urgency" data-table="report">Urgency ↕</th>
+              <th data-sort="estimatedCost" data-table="report">Est. Cost ↕</th>
+              <th data-sort="requestedBy" data-table="report">Requested By ↕</th>
+              <th data-sort="reason" data-table="report">Reason ↕</th>
+              <th data-sort="status" data-table="report">Status ↕</th>
+              <th>Photos</th>
+              <th>Links</th>
+            </tr>
+          </thead>
+          <tbody id="reportDetailTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ADMIN APP ===================== -->
+<div id="adminApp">
+  <div class="session-bar">
+    <span>Viewing: <strong id="sessionAdminName">—</strong></span>
+    <button type="button" id="adminLogoutBtn">Log Out</button>
+  </div>
+  <div class="wrap">
+    <header>
+      <div class="eyebrow">Admin Only</div>
+      <h1>Purchase Requests — All Branches</h1>
+      <p>Review, update status, and edit requests. Live data from Firebase.</p>
+    </header>
+
+    <div class="card">
+      <h3>Manage Branches</h3>
+      <p class="hint">Create or remove branches. Branches are used when staff submit requests and in reports/filters.</p>
+      <div class="names-manager" id="branchesList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
+      <div class="row">
+        <div><label>Branch Name</label><input type="text" id="newBranchName" placeholder="e.g. Riyadh branch"></div>
+      </div>
+      <button type="button" class="primary" id="addBranchBtn">Add Branch</button>
+    </div>
+
+    <div class="card">
+      <h3>Manage Users</h3>
+      <p class="hint">Create logins for staff. Old request data stays even if a user is removed later.</p>
+      <div class="names-manager" id="usersList" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
+      <div class="row three">
+        <div><label>Name</label><input type="text" id="newUsername" placeholder="e.g. ahmed"></div>
+        <div><label>Password</label><input type="text" id="newPassword" placeholder="e.g. 90123"></div>
+        <div><label>Role</label>
+          <select id="newRole">
+            <option value="user">User (fills requests)</option>
+            <option value="report">Report Viewer</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+      </div>
+      <button type="button" class="primary" id="addUserBtn">Create User</button>
+    </div>
+
+    <div class="admin-filters">
+      <select id="branchFilter"><option value="">All branches</option></select>
+      <select id="typeFilter">
+        <option value="">All types</option>
+        <option value="Purchase">Purchase</option>
+        <option value="Maintenance">Maintenance</option>
+      </select>
+      <select id="statusFilter">
+        <option value="">All statuses</option>
+        <option value="Pending">Pending</option>
+        <option value="Done">Done</option>
+      </select>
+      <button type="button" class="secondary" id="clearFilterBtn">Clear filters</button>
+      <button type="button" class="secondary" id="refreshRequestsBtn">Refresh</button>
+      <button type="button" class="secondary" id="adminExportBtn">📥 Export Excel (CSV)</button>
+    </div>
+
+    <div class="table-wrap" style="margin:0 16px;">
       <table>
-        <thead><tr><th>#</th><th>Staff Name</th><th>Branch</th><th>Date</th><th>Invoice Ref</th><th>Evidence</th><th>Comment / Notes</th></tr></thead>
-        <tbody id="tableBody">
-          <tr><td colspan="7"><div class="state-box"><div class="spinner"></div><div class="state-msg">Loading...</div></div></td></tr>
-        </tbody>
+        <thead>
+          <tr>
+            <th data-sort="date" data-table="admin">Date ↕</th>
+            <th data-sort="branch" data-table="admin">Branch ↕</th>
+            <th data-sort="requestType" data-table="admin">Type ↕</th>
+            <th data-sort="requestedBy" data-table="admin">Requested By ↕</th>
+            <th data-sort="itemName" data-table="admin">Item ↕</th>
+            <th data-sort="quantity" data-table="admin">Qty ↕</th>
+            <th data-sort="urgency" data-table="admin">Urgency ↕</th>
+            <th data-sort="estimatedCost" data-table="admin">Est. Cost ↕</th>
+            <th data-sort="reason" data-table="admin">Reason ↕</th>
+            <th data-sort="status" data-table="admin">Status ↕</th>
+            <th>Photos</th>
+            <th>Links</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="adminTbody"></tbody>
       </table>
     </div>
   </div>
 </div>
 
-<script>
-// ═══════════════════════════════════════
-// ✅ PUBLISHED CSV URL (aapki sheet)
-// ═══════════════════════════════════════
-const CSV_URL = "https://docs.google.com/spreadsheets/d/1tT6Ds4dNw7EeAoHsxD997vdrH_7kb6GmktC94S09lQ8/edit?gid=0#gid=0";
-const PASSWORD = 'Neel@2026';
+<!-- ===================== EDIT MODAL (admin) ===================== -->
+<div id="editOverlay">
+  <div class="edit-modal">
+    <h3>Edit Purchase Request</h3>
+    <div class="row single"><div><label>Request Type</label>
+      <select id="editRequestType"><option value="Purchase">Purchase</option><option value="Maintenance">Maintenance</option></select>
+    </div></div>
+    <div class="row single"><div><label>Item Name</label><input type="text" id="editItemName"></div></div>
+    <div class="row three">
+      <div><label>Quantity</label><input type="number" step="any" id="editQuantity"></div>
+      <div><label>Urgency</label>
+        <select id="editUrgency"><option value="Low">Low</option><option value="Medium">Medium</option><option value="High">High</option></select>
+      </div>
+      <div><label>Estimated Cost</label><input type="number" step="any" id="editEstimatedCost"></div>
+    </div>
+    <div class="row">
+      <div><label>Requested By</label><input type="text" id="editRequestedBy"></div>
+      <div><label>Status</label>
+        <select id="editStatus"><option value="Pending">Pending</option><option value="Done">Done</option></select>
+      </div>
+    </div>
+    <div class="row single"><div><label>Reason / Purpose</label><input type="text" id="editReason"></div></div>
+    <div class="row single"><div><label>Notes</label><textarea id="editNotes"></textarea></div></div>
+    
+    <div style="margin-bottom:12px;">
+      <label>Reference Links</label>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <input type="url" id="editItemLink1" placeholder="https://example.com/product-1">
+        <input type="url" id="editItemLink2" placeholder="https://example.com/product-2">
+      </div>
+    </div>
 
-let allRecords = [], allSummary = {}, trendChart = null, branchChart = null;
+    <div>
+      <label>Item Photos</label>
+      <div id="editCurrentPhotosContainer" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <label style="margin:0;font-size:11px;">Add More Photos</label>
+        <button type="button" class="secondary" id="editAddPhotoFieldBtn" style="padding:3px 8px;font-size:11px;">+ Add Photo</button>
+      </div>
+      <div id="editPhotoInputsContainer" style="display:flex;flex-direction:column;gap:8px;">
+        <div><input type="file" accept="image/*" class="editPhotoDynamicInput"></div>
+      </div>
+    </div>
 
-Chart.defaults.color = '#9a6a6e';
-Chart.defaults.font.family = "'Georgia', serif";
-Chart.defaults.font.size = 11;
+    <div class="edit-actions">
+      <button type="button" class="danger" id="deleteRequestBtn">Delete Request</button>
+      <div style="display:flex;gap:10px;">
+        <button type="button" class="secondary" id="cancelEditBtn">Cancel</button>
+        <button type="button" class="primary" id="saveEditBtn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-// ── PASSWORD ──────────────────────────
-function doLogin() {
-  const pass = document.getElementById('passInput').value;
-  const err  = document.getElementById('passError');
-  err.style.display = 'none';
-  if (pass === PASSWORD) {
-    document.getElementById('lockScreen').style.display = 'none';
-    loadData();
-  } else {
-    err.style.display = 'block';
-    document.getElementById('passInput').value = '';
-    document.getElementById('passInput').focus();
-  }
+<!-- ===================== PHOTO VIEWER MODAL (Multiple gallery) ===================== -->
+<div id="photoViewOverlay">
+  <div class="photo-view-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span id="photoCounter" style="font-size:12px;font-weight:700;color:var(--ink-soft);">Photo 1 of 1</span>
+      <div></div>
+    </div>
+    <img id="photoViewImg" src="" alt="Item photo">
+    <div style="display:flex;justify-content:center;gap:10px;margin-top:8px;" id="photoNavControls">
+      <button type="button" class="secondary" id="prevPhotoBtn" style="padding:4px 10px;font-size:12px;">◀ Prev</button>
+      <button type="button" class="secondary" id="nextPhotoBtn" style="padding:4px 10px;font-size:12px;">Next ▶</button>
+    </div>
+    <div class="photo-view-actions">
+      <a class="secondary" id="photoViewDownload" download="item-photo.jpg" href="#" style="text-decoration:none;display:inline-flex;align-items:center;padding:9px 16px;border:1.5px solid var(--line);border-radius:10px;font-size:13px;font-weight:700;color:var(--green);">Download</a>
+      <button type="button" class="secondary" id="photoViewCloseBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== REASON VIEWER MODAL ===================== -->
+<div id="reasonViewOverlay">
+  <div class="photo-view-box" style="max-width:420px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span style="font-size:12px;font-weight:700;color:var(--ink-soft);">Reason / Purpose</span>
+    </div>
+    <div id="reasonViewText" style="font-size:14px;line-height:1.5;color:var(--ink);white-space:pre-wrap;padding:6px 2px 14px;">—</div>
+    <div class="photo-view-actions">
+      <button type="button" class="secondary" id="reasonViewCloseBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+// ============= CONFIG — ENTER YOUR DETAILS HERE =============
+const CONFIG = {
+  FIREBASE_CONFIG: {
+    apiKey: "AIzaSyAAa2kZva9UT4XcS6fvdg-btGpXCHkdGK8",
+    authDomain: "purchaseop.firebaseapp.com",
+    projectId: "purchaseop",
+    storageBucket: "purchaseop.firebasestorage.app",
+    messagingSenderId: "589926817768",
+    appId: "1:589926817768:web:5106376c6f3d393b4b4e5d"
+  },
+
+  COLLECTION: "purchaseRequests"
+
+  // Branch names aur user logins (username/password) ab yahan hardcoded
+  // NAHI hain. Ye Firestore ("appBranches" aur "appUsers" collections)
+  // mein already store hain — jab bhi admin panel se naya branch/user
+  // banate ho, wahi seedha Firestore mein save hota hai.
+};
+// ================================================================
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, getDocs, doc, updateDoc, setDoc, deleteDoc,
+  query, where, orderBy, serverTimestamp, limit
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseApp = initializeApp(CONFIG.FIREBASE_CONFIG);
+const db = getFirestore(firebaseApp);
+
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function showToast(msg, isErr){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isErr?' err':'');
+  setTimeout(()=>{ t.className='toast'; }, 3200);
+}
+function urgencyClass(u){ return 'urgency-' + (u||'').toLowerCase(); }
+function statusClass(s){ return (s||'Pending').toLowerCase(); }
+
+// ===== DYNAMIC PHOTO FIELDS HANDLER =====
+document.getElementById('addPhotoFieldBtn').addEventListener('click', ()=>{
+  const container = document.getElementById('photoInputsContainer');
+  const div = document.createElement('div');
+  div.innerHTML = '<input type="file" accept="image/*" class="itemPhotoDynamicInput">';
+  container.appendChild(div);
+});
+
+document.getElementById('editAddPhotoFieldBtn').addEventListener('click', ()=>{
+  const container = document.getElementById('editPhotoInputsContainer');
+  const div = document.createElement('div');
+  div.innerHTML = '<input type="file" accept="image/*" class="editPhotoDynamicInput">';
+  container.appendChild(div);
+});
+
+// ===== GLOBAL DATA & SORTING STATES =====
+let staffRows = [];
+let adminRows = [];
+let currentReportDetailRows = [];
+let sortStates = {
+  staff: { column: null, asc: true },
+  admin: { column: null, asc: true },
+  report: { column: null, asc: true }
+};
+
+function sortData(array, column, asc){
+  return [...array].sort((a, b) => {
+    let valA = a[column] !== undefined && a[column] !== null ? String(a[column]).toLowerCase() : '';
+    let valB = b[column] !== undefined && b[column] !== null ? String(b[column]).toLowerCase() : '';
+    
+    if(!isNaN(valA) && !isNaN(valB) && valA !== '' && valB !== ''){
+      valA = Number(valA);
+      valB = Number(valB);
+    }
+
+    if(valA < valB) return asc ? -1 : 1;
+    if(valA > valB) return asc ? 1 : -1;
+    return 0;
+  });
 }
 
-// ── FETCH DATA ────────────────────────
-function loadData() {
-  document.getElementById('syncInfo').textContent = 'Loading...';
-  document.getElementById('tableBody').innerHTML =
-    '<tr><td colspan="7"><div class="state-box"><div class="spinner"></div><div class="state-msg">Fetching from Google Sheet...</div></div></td></tr>';
-
-  // Try multiple CORS proxies
-  const proxies = [
-    "https://corsproxy.io/?" + encodeURIComponent(CSV_URL),
-    "https://api.allorigins.win/raw?url=" + encodeURIComponent(CSV_URL),
-    "https://thingproxy.freeboard.io/fetch/" + CSV_URL
-  ];
-
-  tryFetch(proxies, 0);
+function setupTableSorting(tableType, renderCallback){
+  document.querySelectorAll(`th[data-table="${tableType}"][data-sort]`).forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sort;
+      if(sortStates[tableType].column === col){
+        sortStates[tableType].asc = !sortStates[tableType].asc;
+      } else {
+        sortStates[tableType].column = col;
+        sortStates[tableType].asc = true;
+      }
+      renderCallback();
+    });
+  });
 }
 
-function tryFetch(proxies, i) {
-  if (i >= proxies.length) {
-    showError("Data load nahi hua. Google Sheet published hai? File → Share → Publish to web → CSV");
+// ===== EXPORT TO CSV FUNCTION =====
+function exportToCSV(dataArray, filename){
+  if(!dataArray || dataArray.length === 0){
+    showToast('No data available to export', true);
     return;
   }
-  fetch(proxies[i])
-    .then(r => { if(!r.ok) throw new Error("HTTP "+r.status); return r.text(); })
-    .then(txt => {
-      if (!txt || txt.trim().length < 5) throw new Error("Empty");
-      processCSV(txt);
-    })
-    .catch(() => tryFetch(proxies, i + 1));
+  const headers = ['Date', 'Branch', 'Type', 'Requested By', 'Item Name', 'Quantity', 'Urgency', 'Est. Cost', 'Reason', 'Status', 'Link 1', 'Link 2', 'Notes'];
+  const csvRows = [headers.join(',')];
+
+  dataArray.forEach(r => {
+    const rowValues = [
+      `"${r.date || ''}"`,
+      `"${r.branch || ''}"`,
+      `"${r.requestType || 'Purchase'}"`,
+      `"${r.requestedBy || ''}"`,
+      `"${(r.itemName || '').replace(/"/g, '""')}"`,
+      `"${r.quantity || ''}"`,
+      `"${r.urgency || ''}"`,
+      `"${r.estimatedCost || ''}"`,
+      `"${(r.reason || '').replace(/"/g, '""')}"`,
+      `"${r.status || 'Pending'}"`,
+      `"${r.itemLink1 || ''}"`,
+      `"${r.itemLink2 || ''}"`,
+      `"${(r.notes || '').replace(/"/g, '""')}"`
+    ];
+    csvRows.push(rowValues.join(','));
+  });
+
+  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast('Excel/CSV Exported successfully!');
 }
 
-function showError(msg) {
-  document.getElementById('syncInfo').textContent = 'Error';
-  document.getElementById('tableBody').innerHTML =
-    `<tr><td colspan="7"><div class="state-box"><div class="state-msg err">⚠️ ${msg}</div></div></td></tr>`;
+// ===== HELPER FOR RENDERING LINKS IN TABLES =====
+function renderLinksCell(r){
+  let linksHtml = [];
+  if(r.itemLink1) linksHtml.push(`<a href="${r.itemLink1}" target="_blank" class="photo-link">Link 1</a>`);
+  if(r.itemLink2) linksHtml.push(`<a href="${r.itemLink2}" target="_blank" class="photo-link">Link 2</a>`);
+  return linksHtml.length > 0 ? linksHtml.join(' | ') : '<span style="color:var(--ink-soft);font-size:11px;">—</span>';
 }
 
-// ── PARSE CSV ─────────────────────────
-function processCSV(csv) {
-  const rows = csv.split('\n').map(r => r.trim()).filter(r => r);
-  const records = [];
+// ===== REASON VIEWER =====
+function openReasonModal(text){
+  document.getElementById('reasonViewText').textContent = text && text.trim() ? text : '(No reason provided)';
+  document.getElementById('reasonViewOverlay').classList.add('show');
+}
+function closeReasonModal(){
+  document.getElementById('reasonViewOverlay').classList.remove('show');
+}
+document.getElementById('reasonViewCloseBtn').addEventListener('click', closeReasonModal);
+document.getElementById('reasonViewOverlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'reasonViewOverlay') closeReasonModal();
+});
 
-  // Skip header row (index 0)
-  for (let i = 1; i < rows.length; i++) {
-    const cols = parseRow(rows[i]);
-    const staffName  = (cols[0]||'').trim();
-    const branch     = (cols[1]||'').trim();
-    const date       = (cols[2]||'').trim().substring(0,10);
-    const invoiceRef = (cols[3]||'').trim();
-    const evidence   = (cols[4]||'').trim();
-    const comment    = (cols[5]||'').trim();
+// ===== MULTI-PHOTO VIEWER =====
+let currentGalleryPhotos = [];
+let currentPhotoIndex = 0;
 
-    if (!staffName && !invoiceRef) continue;
+function openPhotoGallery(photosArray){
+  if(!photosArray || photosArray.length === 0) return;
+  currentGalleryPhotos = photosArray;
+  currentPhotoIndex = 0;
+  updatePhotoViewerDisplay();
+  document.getElementById('photoViewOverlay').classList.add('show');
+}
 
-    records.push({
-      staffName  : staffName  || 'Unknown',
-      branch     : branch     || 'Unknown',
-      date, invoiceRef, evidence, comment,
-      videoLink  : '', hasVideo: false
+function updatePhotoViewerDisplay(){
+  const imgEl = document.getElementById('photoViewImg');
+  const downloadEl = document.getElementById('photoViewDownload');
+  const counterEl = document.getElementById('photoCounter');
+  const navControls = document.getElementById('photoNavControls');
+
+  const url = currentGalleryPhotos[currentPhotoIndex];
+  imgEl.src = url;
+  downloadEl.href = url;
+  counterEl.textContent = `Photo ${currentPhotoIndex + 1} of ${currentGalleryPhotos.length}`;
+  navControls.style.display = currentGalleryPhotos.length > 1 ? 'flex' : 'none';
+}
+
+document.getElementById('prevPhotoBtn').addEventListener('click', ()=>{
+  if(currentGalleryPhotos.length <= 1) return;
+  currentPhotoIndex = (currentPhotoIndex - 1 + currentGalleryPhotos.length) % currentGalleryPhotos.length;
+  updatePhotoViewerDisplay();
+});
+
+document.getElementById('nextPhotoBtn').addEventListener('click', ()=>{
+  if(currentGalleryPhotos.length <= 1) return;
+  currentPhotoIndex = (currentPhotoIndex + 1) % currentGalleryPhotos.length;
+  updatePhotoViewerDisplay();
+});
+
+function closePhotoModal(){
+  document.getElementById('photoViewOverlay').classList.remove('show');
+  document.getElementById('photoViewImg').src = '';
+  currentGalleryPhotos = [];
+}
+document.getElementById('photoViewCloseBtn').addEventListener('click', closePhotoModal);
+document.getElementById('photoViewOverlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'photoViewOverlay') closePhotoModal();
+});
+
+// ===== BRANCHES =====
+let branchesList = null;
+const BRANCHES_COLLECTION = "appBranches";
+
+function slugify(str){
+  return str.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-+|-+$)/g,'');
+}
+
+async function ensureBranchesLoaded(forceRefresh){
+  if(branchesList && !forceRefresh) return branchesList;
+  const snap = await getDocs(collection(db, BRANCHES_COLLECTION));
+  let existing = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+  branchesList = existing.sort((a,b)=> a.name.localeCompare(b.name));
+  return branchesList;
+}
+
+function populateBranchSelect(selectEl, includeAllOption){
+  const current = selectEl.value;
+  selectEl.innerHTML = (includeAllOption ? '<option value="">All branches</option>' : '<option value="">Select branch</option>') +
+    branchesList.map(b => `<option value="${b.name}">${b.name}</option>`).join('');
+  selectEl.value = current;
+}
+
+// ===== BRANCH MULTI-SELECT (used for New Request form — staff can request for multiple branches at once) =====
+let requestBranchSelected = new Set();
+
+function populateRequestBranchMulti(){
+  const panel = document.getElementById('requestBranchPanel');
+  const keep = new Set([...requestBranchSelected].filter(name => branchesList.some(b => b.name === name)));
+  requestBranchSelected = keep;
+  panel.innerHTML = branchesList.map(b => `
+    <label class="multiselect-option">
+      <input type="checkbox" value="${b.name}" ${requestBranchSelected.has(b.name) ? 'checked' : ''}>
+      ${b.name}
+    </label>
+  `).join('');
+  panel.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      if(cb.checked) requestBranchSelected.add(cb.value);
+      else requestBranchSelected.delete(cb.value);
+      updateRequestBranchToggleLabel();
+    });
+  });
+  updateRequestBranchToggleLabel();
+}
+
+function updateRequestBranchToggleLabel(){
+  const toggle = document.getElementById('requestBranchToggle');
+  const n = requestBranchSelected.size;
+  let label = 'Select branch(es)';
+  if(n === 1) label = [...requestBranchSelected][0];
+  else if(n > 1) label = `${n} branches selected`;
+  toggle.innerHTML = `<span>${label}</span>`;
+}
+
+function getSelectedRequestBranches(){
+  return [...requestBranchSelected];
+}
+
+function resetRequestBranchMulti(){
+  requestBranchSelected = new Set();
+  updateRequestBranchToggleLabel();
+  document.querySelectorAll('#requestBranchPanel input[type=checkbox]').forEach(cb => cb.checked = false);
+}
+
+document.getElementById('requestBranchToggle').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  document.getElementById('requestBranchMulti').classList.toggle('open');
+});
+document.addEventListener('click', (e)=>{
+  const wrap = document.getElementById('requestBranchMulti');
+  if(wrap && !wrap.contains(e.target)) wrap.classList.remove('open');
+});
+
+// ===== USERS =====
+let usersList = null;
+const USERS_COLLECTION = "appUsers";
+
+async function ensureUsersLoaded(forceRefresh){
+  if(usersList && !forceRefresh) return usersList;
+  const snap = await getDocs(collection(db, USERS_COLLECTION));
+  let existing = snap.docs.map(d => d.data());
+
+  usersList = existing;
+  return usersList;
+}
+
+// ===== PHOTO COMPRESSION =====
+function compressImage(file, maxDim = 1280, quality = 0.7){
+  return new Promise((resolve, reject)=>{
+    if(!file){ resolve(""); return; }
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      img.onload = ()=>{
+        let { width, height } = img;
+        if(width > height && width > maxDim){ height = Math.round(height * (maxDim / width)); width = maxDim; }
+        else if(height >= width && height > maxDim){ width = Math.round(width * (maxDim / height)); height = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ===== LOGIN =====
+let currentUsername = null;
+
+document.getElementById('staffLoginForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const u = document.getElementById('staffUser').value.trim().toLowerCase();
+  const p = document.getElementById('staffPass').value.trim();
+  const errBox = document.getElementById('staffLoginError');
+
+  let users, branches;
+  try{
+    users = await ensureUsersLoaded();
+    branches = await ensureBranchesLoaded();
+  } catch(err){
+    errBox.textContent = 'Could not connect — check Firebase config/rules';
+    errBox.classList.add('show');
+    return;
+  }
+
+  const match = users.find(x => x.username.toLowerCase() === u && x.password === p);
+  if(!match){
+    errBox.textContent = 'Incorrect username or password.';
+    errBox.classList.add('show');
+    return;
+  }
+
+  errBox.classList.remove('show');
+  currentUsername = match.username;
+  document.getElementById('loginOverlay').style.display = 'none';
+
+  try{
+    if(match.role === 'admin'){
+      document.getElementById('adminApp').style.display = 'block';
+      document.getElementById('sessionAdminName').textContent = 'Owner / Admin — All Branches';
+      await loadUsersAdmin();
+      await loadBranchesAdmin();
+      renderBranchFilterOptions();
+      await loadAdminRequests();
+    } else if(match.role === 'report'){
+      document.getElementById('reportApp').style.display = 'block';
+      document.getElementById('sessionReportBranchName').textContent = match.username;
+      populateBranchSelect(document.getElementById('reportBranch'), true);
+      await loadReportStats();
+    } else {
+      document.getElementById('staffApp').style.display = 'block';
+      document.getElementById('sessionBranchName').textContent = match.username;
+      populateRequestBranchMulti();
+      document.getElementById('requestedBy').value = '';
+      await loadStaffRequests();
+    }
+  } catch(err){
+    showToast('Could not load data — check Firebase config/rules', true);
+  }
+});
+
+document.getElementById('reportLogoutBtn').addEventListener('click', ()=> location.reload());
+document.getElementById('staffLogoutBtn').addEventListener('click', ()=> location.reload());
+document.getElementById('adminLogoutBtn').addEventListener('click', ()=> location.reload());
+
+// ===== ADMIN: MANAGE USERS =====
+const ROLE_LABELS = { admin: 'Admin', report: 'Report Viewer', user: 'User' };
+
+function renderUsersList(){
+  const list = document.getElementById('usersList');
+  list.innerHTML = usersList.map(u => `
+    <div class="name-tag"><strong>${u.username}</strong> / ${u.password} <span style="color:var(--accent);font-weight:700;">(${ROLE_LABELS[u.role] || 'User'})</span>
+      <button type="button" data-username="${u.username}" class="removeUserBtn">×</button>
+    </div>
+  `).join('');
+  document.querySelectorAll('.removeUserBtn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const target = usersList.find(u => u.username === btn.dataset.username);
+      const adminCount = usersList.filter(u => u.role === 'admin').length;
+      if(target && target.role === 'admin' && adminCount <= 1){
+        showToast('Cannot remove the last admin account', true);
+        return;
+      }
+      if(!confirm('Remove this user?')) return;
+      btn.disabled = true;
+      try{
+        await deleteDoc(doc(db, USERS_COLLECTION, btn.dataset.username));
+        usersList = usersList.filter(u => u.username !== btn.dataset.username);
+        renderUsersList();
+        showToast('User removed');
+      } catch(err){
+        showToast('Could not remove user', true);
+        btn.disabled = false;
+      }
+    });
+  });
+}
+
+async function loadUsersAdmin(){
+  await ensureUsersLoaded(true);
+  renderUsersList();
+}
+
+document.getElementById('addUserBtn').addEventListener('click', async ()=>{
+  const username = document.getElementById('newUsername').value.trim().toLowerCase();
+  const password = document.getElementById('newPassword').value.trim();
+  const role = document.getElementById('newRole').value;
+  if(!username || !password){ showToast('Please fill name and password', true); return; }
+  if(usersList.some(u => u.username === username)){ showToast('That username already exists', true); return; }
+  const btn = document.getElementById('addUserBtn');
+  btn.disabled = true; btn.textContent = 'Creating...';
+  try{
+    await setDoc(doc(db, USERS_COLLECTION, username), { username, password, role });
+    usersList.push({ username, password, role });
+    renderUsersList();
+    document.getElementById('newUsername').value = '';
+    document.getElementById('newPassword').value = '';
+    showToast('User created!');
+  } catch(err){
+    showToast('Could not create user', true);
+  } finally{
+    btn.disabled = false; btn.textContent = 'Create User';
+  }
+});
+
+// ===== ADMIN: MANAGE BRANCHES =====
+function renderBranchesList(){
+  const list = document.getElementById('branchesList');
+  list.innerHTML = branchesList.map(b => `
+    <div class="name-tag"><strong>${b.name}</strong>
+      <button type="button" data-id="${b.id}" class="removeBranchBtn">×</button>
+    </div>
+  `).join('');
+  document.querySelectorAll('.removeBranchBtn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(!confirm('Remove this branch?')) return;
+      btn.disabled = true;
+      try{
+        await deleteDoc(doc(db, BRANCHES_COLLECTION, btn.dataset.id));
+        branchesList = branchesList.filter(b => b.id !== btn.dataset.id);
+        renderBranchesList();
+        renderBranchFilterOptions();
+        showToast('Branch removed');
+      } catch(err){
+        showToast('Could not remove branch', true);
+        btn.disabled = false;
+      }
+    });
+  });
+}
+
+async function loadBranchesAdmin(){
+  await ensureBranchesLoaded(true);
+  renderBranchesList();
+}
+
+function renderBranchFilterOptions(){
+  populateBranchSelect(document.getElementById('branchFilter'), true);
+}
+
+document.getElementById('addBranchBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('newBranchName').value.trim();
+  if(!name){ showToast('Please enter a branch name', true); return; }
+  const id = slugify(name);
+  if(branchesList.some(b => b.id === id)){ showToast('That branch already exists', true); return; }
+  const btn = document.getElementById('addBranchBtn');
+  btn.disabled = true; btn.textContent = 'Adding...';
+  try{
+    await setDoc(doc(db, BRANCHES_COLLECTION, id), { name });
+    branchesList.push({ id, name });
+    branchesList.sort((a,b)=> a.name.localeCompare(b.name));
+    renderBranchesList();
+    renderBranchFilterOptions();
+    document.getElementById('newBranchName').value = '';
+    showToast('Branch added!');
+  } catch(err){
+    showToast('Could not add branch', true);
+  } finally{
+    btn.disabled = false; btn.textContent = 'Add Branch';
+  }
+});
+
+// ===== SUBMIT REQUEST (staff) =====
+document.getElementById('submitRequestBtn').addEventListener('click', async ()=>{
+  const branches = getSelectedRequestBranches();
+  const requestType = document.getElementById('requestType').value;
+  const itemName = document.getElementById('itemName').value.trim();
+  const quantity = document.getElementById('quantity').value;
+  const urgency = document.getElementById('urgency').value;
+  const estimatedCost = document.getElementById('estimatedCost').value;
+  const requestedBy = document.getElementById('requestedBy').value.trim();
+  const reason = document.getElementById('reason').value.trim();
+  const itemLink1 = document.getElementById('itemLink1').value.trim();
+  const itemLink2 = document.getElementById('itemLink2').value.trim();
+  const notes = document.getElementById('notes').value.trim();
+
+  if(branches.length === 0){ showToast('Please select at least one branch', true); return; }
+  if(!itemName || !quantity || !requestedBy){ showToast('Please fill required fields', true); return; }
+
+  const btn = document.getElementById('submitRequestBtn');
+  btn.disabled = true; btn.textContent = 'Submitting...';
+
+  try{
+    const photoFiles = Array.from(document.querySelectorAll('.itemPhotoDynamicInput'))
+      .map(input => input.files[0])
+      .filter(file => file !== undefined);
+
+    const compressedPhotos = [];
+    for(const file of photoFiles){
+      const compressed = await compressImage(file);
+      if(compressed) compressedPhotos.push(compressed);
+    }
+
+    // ONE request document even if multiple branches are selected — branches stored as an array,
+    // and as a comma-joined string in `branch` so it still shows nicely in tables/CSV/sorting.
+    await addDoc(collection(db, CONFIG.COLLECTION), {
+      branch: branches.join(', '),
+      branches,
+      submittedBy: currentUsername, date: todayStr(),
+      requestType, itemName, quantity, urgency, estimatedCost: estimatedCost ? Number(estimatedCost) : 0, requestedBy, reason,
+      itemLink1, itemLink2, notes,
+      photos: compressedPhotos,
+      status: 'Pending', createdAt: serverTimestamp()
+    });
+    showToast('Request submitted!');
+    ['itemName','quantity','urgency','estimatedCost','reason','itemLink1','itemLink2','notes'].forEach(id=>{
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('requestType').value = 'Purchase';
+    document.getElementById('photoInputsContainer').innerHTML = `
+      <div><input type="file" accept="image/*" class="itemPhotoDynamicInput"></div>
+      <div><input type="file" accept="image/*" class="itemPhotoDynamicInput"></div>
+    `;
+    resetRequestBranchMulti();
+    await loadStaffRequests();
+  } catch(err){
+    showToast('Could not submit', true);
+  } finally{
+    btn.disabled = false; btn.textContent = 'Submit Request →';
+  }
+});
+
+// ===== STAFF: LOAD MY OWN REQUESTS =====
+async function loadStaffRequests(){
+  const tbody = document.getElementById('staffTbody');
+  tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Loading…</td></tr>';
+  try{
+    const q = query(collection(db, CONFIG.COLLECTION), where('submittedBy','==',currentUsername), orderBy('createdAt','desc'), limit(100));
+    const snap = await getDocs(q);
+    staffRows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    
+    const totalCount = staffRows.length;
+    let totalAmt = 0;
+    let pendingCount = 0;
+    let pendingAmt = 0;
+    let doneCount = 0;
+    let doneAmt = 0;
+
+    staffRows.forEach(r => {
+      const cost = Number(r.estimatedCost) || 0;
+      const qty = Number(r.quantity) || 1;
+      const itemTotal = cost * qty;
+      totalAmt += itemTotal;
+      if((r.status || 'Pending') === 'Done'){
+        doneCount++;
+        doneAmt += itemTotal;
+      } else {
+        pendingCount++;
+        pendingAmt += itemTotal;
+      }
+    });
+
+    document.getElementById('staffStatTotal').textContent = totalCount;
+    document.getElementById('staffStatTotalAmt').textContent = `Amount: ${totalAmt}`;
+    document.getElementById('staffStatPending').textContent = pendingCount;
+    document.getElementById('staffStatPendingAmt').textContent = `Amount: ${pendingAmt}`;
+    document.getElementById('staffStatDone').textContent = doneCount;
+    document.getElementById('staffStatDoneAmt').textContent = `Amount: ${doneAmt}`;
+
+    renderStaffTable();
+  } catch(err){
+    tbody.innerHTML = '<tr><td colspan="10" class="empty">Could not load.</td></tr>';
+  }
+}
+
+function renderStaffTable(){
+  const tbody = document.getElementById('staffTbody');
+  let data = [...staffRows];
+  const { column, asc } = sortStates.staff;
+  if(column) data = sortData(data, column, asc);
+
+  if(data.length === 0){
+    tbody.innerHTML = '<tr><td colspan="10" class="empty">No requests yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map((r) => {
+    let photosList = r.photos || [];
+    if(photosList.length === 0){
+      if(r.itemPhoto1) photosList.push(r.itemPhoto1);
+      if(r.itemPhoto2) photosList.push(r.itemPhoto2);
+    }
+    return `
+      <tr>
+        <td>${r.date || ''}</td>
+        <td>${r.branch || ''}</td>
+        <td>${r.requestType || 'Purchase'}</td>
+        <td>${r.itemName || ''}</td>
+        <td>${r.quantity || ''}</td>
+        <td>${r.urgency ? `<span class="pill ${urgencyClass(r.urgency)}">${r.urgency}</span>` : ''}</td>
+        <td>${r.estimatedCost || ''}</td>
+        <td><span class="pill ${statusClass(r.status)}">${r.status || 'Pending'}</span></td>
+        <td>${photosList.length > 0 ? `<button type="button" class="photo-link view-photos-btn" data-id="${r.id}">View Photos (${photosList.length})</button>` : ''}</td>
+        <td>${renderLinksCell(r)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  document.querySelectorAll('#staffTbody .view-photos-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const r = staffRows.find(x => x.id === btn.dataset.id);
+      let list = r.photos || [];
+      if(list.length === 0){
+        if(r.itemPhoto1) list.push(r.itemPhoto1);
+        if(r.itemPhoto2) list.push(r.itemPhoto2);
+      }
+      openPhotoGallery(list);
+    });
+  });
+}
+setupTableSorting('staff', renderStaffTable);
+document.getElementById('staffRefreshBtn').addEventListener('click', loadStaffRequests);
+
+// ===== REPORT (view-only role) =====
+let reportRows = [];
+async function loadReportStats(){
+  const totalEl = document.getElementById('statTotal');
+  const pendingEl = document.getElementById('statPending');
+  const doneEl = document.getElementById('statDone');
+  const totalAmtEl = document.getElementById('statTotalAmt');
+  const pendingAmtEl = document.getElementById('statPendingAmt');
+  const doneAmtEl = document.getElementById('statDoneAmt');
+
+  totalEl.textContent = '…'; pendingEl.textContent = '…'; doneEl.textContent = '…';
+  totalAmtEl.textContent = 'Amount: …'; pendingAmtEl.textContent = 'Amount: …'; doneAmtEl.textContent = 'Amount: …';
+  
+  try{
+    const branchVal = document.getElementById('reportBranch').value;
+    const typeVal = document.getElementById('reportType').value;
+    const from = document.getElementById('reportFrom').value;
+    const to = document.getElementById('reportTo').value;
+    const constraints = [];
+    if(branchVal) constraints.push(where('branches','array-contains',branchVal));
+    if(typeVal) constraints.push(where('requestType','==',typeVal));
+    if(from) constraints.push(where('date','>=',from));
+    if(to) constraints.push(where('date','<=',to));
+    const q = constraints.length ? query(collection(db, CONFIG.COLLECTION), ...constraints) : collection(db, CONFIG.COLLECTION);
+    const snap = await getDocs(q);
+    reportRows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    let totalAmt = 0;
+    let pendingCount = 0;
+    let pendingAmt = 0;
+    let doneCount = 0;
+    let doneAmt = 0;
+
+    reportRows.forEach(r => {
+      const cost = Number(r.estimatedCost) || 0;
+      const qty = Number(r.quantity) || 1;
+      const itemTotal = cost * qty;
+      totalAmt += itemTotal;
+      if((r.status || 'Pending') === 'Done'){
+        doneCount++;
+        doneAmt += itemTotal;
+      } else {
+        pendingCount++;
+        pendingAmt += itemTotal;
+      }
+    });
+
+    totalEl.textContent = reportRows.length;
+    totalAmtEl.textContent = `Amount: ${totalAmt}`;
+
+    pendingEl.textContent = pendingCount;
+    pendingAmtEl.textContent = `Amount: ${pendingAmt}`;
+
+    doneEl.textContent = doneCount;
+    doneAmtEl.textContent = `Amount: ${doneAmt}`;
+  } catch(err){
+    reportRows = [];
+    totalEl.textContent = '—'; pendingEl.textContent = '—'; doneEl.textContent = '—';
+    totalAmtEl.textContent = 'Amount: —'; pendingAmtEl.textContent = 'Amount: —'; doneAmtEl.textContent = 'Amount: —';
+  }
+}
+document.getElementById('reportApplyBtn').addEventListener('click', loadReportStats);
+document.getElementById('reportClearBtn').addEventListener('click', ()=>{
+  document.getElementById('reportBranch').value = '';
+  document.getElementById('reportType').value = '';
+  document.getElementById('reportFrom').value = '';
+  document.getElementById('reportTo').value = '';
+  loadReportStats();
+});
+document.getElementById('reportExportBtn').addEventListener('click', ()=> exportToCSV(reportRows, 'requests-report.csv'));
+
+function hideReportDetail(){
+  document.getElementById('reportDetailCard').style.display = 'none';
+  document.querySelectorAll('#reportApp .stat-box.clickable').forEach(el => el.classList.remove('active'));
+}
+
+let activeReportStatusFilter = '';
+function renderReportDetail(filterStatus, boxEl){
+  activeReportStatusFilter = filterStatus;
+  currentReportDetailRows = filterStatus ? reportRows.filter(r => (r.status || 'Pending') === filterStatus) : reportRows;
+  if(boxEl){
+    document.querySelectorAll('#reportApp .stat-box.clickable').forEach(el => el.classList.remove('active'));
+    boxEl.classList.add('active');
+  }
+  document.getElementById('reportDetailTitle').textContent = `${filterStatus || 'All'} Requests (${currentReportDetailRows.length})`;
+  
+  const tbody = document.getElementById('reportDetailTbody');
+  let data = [...currentReportDetailRows];
+  const { column, asc } = sortStates.report;
+  if(column) data = sortData(data, column, asc);
+
+  if(data.length === 0){
+    tbody.innerHTML = '<tr><td colspan="12" class="empty">No requests found.</td></tr>';
+  } else {
+    tbody.innerHTML = data.map((r) => {
+      let list = r.photos || [];
+      if(list.length === 0){
+        if(r.itemPhoto1) list.push(r.itemPhoto1);
+        if(r.itemPhoto2) list.push(r.itemPhoto2);
+      }
+      return `
+        <tr>
+          <td>${r.date || ''}</td>
+          <td>${r.branch || ''}</td>
+          <td>${r.requestType || 'Purchase'}</td>
+          <td>${r.itemName || ''}</td>
+          <td>${r.quantity || ''}</td>
+          <td>${r.urgency ? `<span class="pill ${urgencyClass(r.urgency)}">${r.urgency}</span>` : ''}</td>
+          <td>${r.estimatedCost || ''}</td>
+          <td>${r.requestedBy || ''}</td>
+          <td>${r.reason ? `<button type="button" class="photo-link view-reason-btn" data-id="${r.id}">View</button>` : ''}</td>
+          <td><span class="pill ${statusClass(r.status)}">${r.status || 'Pending'}</span></td>
+          <td>${list.length > 0 ? `<button type="button" class="photo-link view-photos-btn" data-id="${r.id}">View Photos (${list.length})</button>` : ''}</td>
+          <td>${renderLinksCell(r)}</td>
+        </tr>
+      `;
+    }).join('');
+    document.querySelectorAll('#reportDetailTbody .view-reason-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const r = currentReportDetailRows.find(x => x.id === btn.dataset.id);
+        openReasonModal(r.reason);
+      });
+    });
+    document.querySelectorAll('#reportDetailTbody .view-photos-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const r = currentReportDetailRows.find(x => x.id === btn.dataset.id);
+        let list = r.photos || [];
+        if(list.length === 0){
+          if(r.itemPhoto1) list.push(r.itemPhoto1);
+          if(r.itemPhoto2) list.push(r.itemPhoto2);
+        }
+        openPhotoGallery(list);
+      });
     });
   }
-
-  allRecords = records;
-  allSummary = buildSummary(records);
-  document.getElementById('syncInfo').textContent = 'Synced: ' + new Date().toLocaleTimeString();
-  populateDropdowns(records);
-  render(records, allSummary);
+  document.getElementById('reportDetailCard').style.display = 'block';
 }
+setupTableSorting('report', ()=> renderReportDetail(activeReportStatusFilter, null));
 
-function parseRow(line) {
-  const res = []; let cur = '', inQ = false;
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i];
-    if (c === '"') { inQ = !inQ; }
-    else if (c === ',' && !inQ) { res.push(cur); cur = ''; }
-    else { cur += c; }
+document.getElementById('statBoxTotal').addEventListener('click', function(){ renderReportDetail('', this); });
+document.getElementById('statBoxPending').addEventListener('click', function(){ renderReportDetail('Pending', this); });
+document.getElementById('statBoxDone').addEventListener('click', function(){ renderReportDetail('Done', this); });
+document.getElementById('reportDetailCloseBtn').addEventListener('click', hideReportDetail);
+
+// ===== ADMIN: LOAD ALL REQUESTS =====
+async function loadAdminRequests(){
+  const tbody = document.getElementById('adminTbody');
+  tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;">Loading…</td></tr>';
+  try{
+    const branchVal = document.getElementById('branchFilter').value;
+    const statusVal = document.getElementById('statusFilter').value;
+    const typeVal = document.getElementById('typeFilter').value;
+    const constraints = [];
+    if(branchVal) constraints.push(where('branches','array-contains',branchVal));
+    if(statusVal) constraints.push(where('status','==',statusVal));
+    if(typeVal) constraints.push(where('requestType','==',typeVal));
+
+    let q = constraints.length
+      ? query(collection(db, CONFIG.COLLECTION), ...constraints, limit(300))
+      : query(collection(db, CONFIG.COLLECTION), limit(300));
+
+    const snap = await getDocs(q);
+    adminRows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderAdminTable();
+  } catch(err){
+    tbody.innerHTML = '<tr><td colspan="13" class="empty">Could not load.</td></tr>';
   }
-  res.push(cur);
-  return res;
 }
 
-// ── SUMMARY ───────────────────────────
-function buildSummary(records) {
-  const sc={}, bc={}, mc={};
-  records.forEach(r => {
-    if(r.staffName!=='Unknown') sc[r.staffName]=(sc[r.staffName]||0)+1;
-    if(r.branch!=='Unknown')    bc[r.branch]=(bc[r.branch]||0)+1;
-    if(r.date&&r.date.length>=7){const m=r.date.slice(0,7);mc[m]=(mc[m]||0)+1;}
-  });
-  let topStaff='—',topCount=0;
-  Object.entries(sc).forEach(([n,c])=>{if(c>topCount){topStaff=n;topCount=c;}});
-  return {
-    total:records.length, uniqueStaff:Object.keys(sc).length, uniqueBranches:Object.keys(bc).length,
-    topStaff, topCount,
-    staffBreakdown:  Object.entries(sc).sort((a,b)=>b[1]-a[1]).map(([name,count])=>({name,count})),
-    branchBreakdown: Object.entries(bc).sort((a,b)=>b[1]-a[1]).map(([name,count])=>({name,count})),
-    monthTrend:      Object.entries(mc).sort((a,b)=>a[0].localeCompare(b[0])).map(([month,count])=>({month,count}))
-  };
-}
+function renderAdminTable(){
+  const tbody = document.getElementById('adminTbody');
+  let data = [...adminRows];
+  const { column, asc } = sortStates.admin;
+  if(column) data = sortData(data, column, asc);
 
-// ── FILTERS ───────────────────────────
-function populateDropdowns(records) {
-  setOpts('fStaff',  unique(records.map(r=>r.staffName)), 'All Staff');
-  setOpts('fBranch', unique(records.map(r=>r.branch)),    'All Branches');
-}
-function setOpts(id,vals,lbl){
-  document.getElementById(id).innerHTML=`<option value="">${lbl}</option>`+vals.sort().map(v=>`<option>${esc(v)}</option>`).join('');
-}
-function applyFilter() {
-  const s=document.getElementById('fStaff').value, b=document.getElementById('fBranch').value,
-        f=document.getElementById('fFrom').value,  t=document.getElementById('fTo').value;
-  const filtered=allRecords.filter(r=>{
-    if(s&&r.staffName!==s)return false; if(b&&r.branch!==b)return false;
-    if(f&&r.date<f)return false; if(t&&r.date>t)return false; return true;
-  });
-  render(filtered, buildSummary(filtered));
-}
-function clearFilter(){
-  ['fStaff','fBranch','fFrom','fTo'].forEach(id=>document.getElementById(id).value='');
-  render(allRecords,allSummary);
-}
-
-// ── RENDER ────────────────────────────
-function render(records,summary){
-  renderKPIs(summary);
-  renderTrendChart(summary.monthTrend||[]);
-  renderBranchChart(summary.branchBreakdown||[]);
-  renderStaffBars(summary.staffBreakdown||[]);
-  renderTable(records);
-}
-function renderKPIs(s){
-  setText('kTotal',s.total??'0'); setText('kStaff',s.uniqueStaff??'0');
-  setText('kBranch',s.uniqueBranches??'0'); setText('kTop',s.topStaff||'—');
-  setText('kTopSub',s.topCount?s.topCount+' incidents':'No data');
-}
-function renderTrendChart(data){
-  const labels=data.map(d=>fmtMonth(d.month)), values=data.map(d=>d.count);
-  if(trendChart)trendChart.destroy();
-  const ctx=document.getElementById('chartTrend').getContext('2d');
-  const g=ctx.createLinearGradient(0,0,0,230);
-  g.addColorStop(0,'rgba(224,124,130,0.4)'); g.addColorStop(1,'rgba(224,124,130,0.03)');
-  trendChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Incidents',data:values,
-    borderColor:'#e07c82',backgroundColor:g,borderWidth:2.5,pointBackgroundColor:'#e07c82',
-    pointRadius:5,tension:0.35,fill:true}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{x:{grid:{color:'rgba(212,184,186,0.5)'},ticks:{maxTicksLimit:8}},
-              y:{grid:{color:'rgba(212,184,186,0.5)'},beginAtZero:true,ticks:{stepSize:1}}}}});
-}
-function renderBranchChart(data){
-  const labels=data.map(d=>d.name), values=data.map(d=>d.count);
-  const colors=['#203b36','#e07c82','#4a8a7e','#c0565c','#172e2a','#f0a8ac','#2a4e48'];
-  if(branchChart)branchChart.destroy();
-  const ctx=document.getElementById('chartBranch').getContext('2d');
-  branchChart=new Chart(ctx,{type:'doughnut',data:{labels,datasets:[{data:values,
-    backgroundColor:colors.slice(0,labels.length),borderColor:'#fff',borderWidth:3}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
-      plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:14}},
-        tooltip:{callbacks:{label:c=>` ${c.label}: ${c.parsed} cases`}}}}});
-}
-function renderStaffBars(data){
-  const c=document.getElementById('staffBars');
-  if(!data.length){c.innerHTML='<div class="state-box"><div class="state-msg">No data</div></div>';return;}
-  const max=data[0].count;
-  c.innerHTML=data.map(s=>`<div class="bar-row">
-    <span class="bar-name">${esc(s.name)}</span>
-    <div class="bar-track"><div class="bar-fill" style="width:${Math.round((s.count/max)*100)}%"></div></div>
-    <span class="bar-count">${s.count}</span></div>`).join('');
-}
-function renderTable(records){
-  setText('tableCount',records.length);
-  const tb=document.getElementById('tableBody');
-  if(!records.length){
-    tb.innerHTML='<tr><td colspan="7"><div class="state-box"><div class="state-msg">No incidents found.</div></div></td></tr>';
+  if(data.length === 0){
+    tbody.innerHTML = '<tr><td colspan="13" class="empty">No requests found.</td></tr>';
     return;
   }
-  tb.innerHTML=records.map((r,i)=>{
-    const ev=r.evidence.toLowerCase();
-    const badge=ev.includes('video')?`<span class="badge video">📹 Video</span>`:
-                r.evidence?`<span class="badge other">${esc(r.evidence)}</span>`:'—';
-    return `<tr>
-      <td class="td-num">${i+1}</td>
-      <td class="td-staff">${esc(r.staffName)}</td>
-      <td class="td-branch">${esc(r.branch)}</td>
-      <td class="td-date">${esc(r.date)||'—'}</td>
-      <td class="td-inv">${esc(r.invoiceRef)||'—'}</td>
-      <td>${badge}</td>
-      <td class="td-note" title="${esc(r.comment)}">${esc(r.comment)||'—'}</td>
-    </tr>`;
+
+  tbody.innerHTML = data.map(r => {
+    let list = r.photos || [];
+    if(list.length === 0){
+      if(r.itemPhoto1) list.push(r.itemPhoto1);
+      if(r.itemPhoto2) list.push(r.itemPhoto2);
+    }
+    return `
+      <tr>
+        <td>${r.date || ''}</td>
+        <td>${r.branch || ''}</td>
+        <td>${r.requestType || 'Purchase'}</td>
+        <td>${r.requestedBy || ''}</td>
+        <td>${r.itemName || ''}</td>
+        <td>${r.quantity || ''}</td>
+        <td>${r.urgency ? `<span class="pill ${urgencyClass(r.urgency)}">${r.urgency}</span>` : ''}</td>
+        <td>${r.estimatedCost || ''}</td>
+        <td>${r.reason ? `<button type="button" class="photo-link view-reason-btn" data-id="${r.id}">View</button>` : ''}</td>
+        <td><span class="pill ${statusClass(r.status)}">${r.status || 'Pending'}</span></td>
+        <td>${list.length > 0 ? `<button type="button" class="photo-link view-photos-btn" data-id="${r.id}">View Photos (${list.length})</button>` : ''}</td>
+        <td>${renderLinksCell(r)}</td>
+        <td><button type="button" class="edit-btn" data-id="${r.id}">Edit</button></td>
+      </tr>
+    `;
   }).join('');
+
+  document.querySelectorAll('.edit-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> openEditModal(adminRows.find(r=>r.id===btn.dataset.id)));
+  });
+  document.querySelectorAll('#adminTbody .view-reason-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const r = adminRows.find(x => x.id === btn.dataset.id);
+      openReasonModal(r.reason);
+    });
+  });
+  document.querySelectorAll('#adminTbody .view-photos-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const r = adminRows.find(x => x.id === btn.dataset.id);
+      let list = r.photos || [];
+      if(list.length === 0){
+        if(r.itemPhoto1) list.push(r.itemPhoto1);
+        if(r.itemPhoto2) list.push(r.itemPhoto2);
+      }
+      openPhotoGallery(list);
+    });
+  });
+}
+setupTableSorting('admin', renderAdminTable);
+
+document.getElementById('refreshRequestsBtn').addEventListener('click', loadAdminRequests);
+document.getElementById('branchFilter').addEventListener('change', loadAdminRequests);
+document.getElementById('statusFilter').addEventListener('change', loadAdminRequests);
+document.getElementById('typeFilter').addEventListener('change', loadAdminRequests);
+document.getElementById('clearFilterBtn').addEventListener('click', ()=>{
+  document.getElementById('branchFilter').value = '';
+  document.getElementById('statusFilter').value = '';
+  document.getElementById('typeFilter').value = '';
+  loadAdminRequests();
+});
+document.getElementById('adminExportBtn').addEventListener('click', ()=> exportToCSV(adminRows, 'all-purchase-requests.csv'));
+
+// ===== ADMIN: EDIT MODAL =====
+let editingId = null;
+let editingExistingPhotos = [];
+
+function openEditModal(row){
+  editingId = row.id;
+  editingExistingPhotos = [...(row.photos || [])];
+  if(editingExistingPhotos.length === 0){
+    if(row.itemPhoto1) editingExistingPhotos.push(row.itemPhoto1);
+    if(row.itemPhoto2) editingExistingPhotos.push(row.itemPhoto2);
+  }
+
+  document.getElementById('editRequestType').value = row.requestType || 'Purchase';
+  document.getElementById('editItemName').value = row.itemName || '';
+  document.getElementById('editQuantity').value = row.quantity || '';
+  document.getElementById('editUrgency').value = row.urgency || 'Low';
+  document.getElementById('editEstimatedCost').value = row.estimatedCost || '';
+  document.getElementById('editRequestedBy').value = row.requestedBy || '';
+  document.getElementById('editStatus').value = row.status || 'Pending';
+  document.getElementById('editReason').value = row.reason || '';
+  document.getElementById('editItemLink1').value = row.itemLink1 || '';
+  document.getElementById('editItemLink2').value = row.itemLink2 || '';
+  document.getElementById('editNotes').value = row.notes || '';
+  document.getElementById('editPhotoInputsContainer').innerHTML = '<div><input type="file" accept="image/*" class="editPhotoDynamicInput"></div>';
+
+  renderEditCurrentPhotos();
+  document.getElementById('editOverlay').classList.add('show');
 }
 
-// ── UTILS ─────────────────────────────
-function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function setText(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
-function unique(a){return[...new Set(a.filter(Boolean))];}
-function fmtMonth(ym){
-  if(!ym||ym.length<7)return ym;
-  const m=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const[y,mo]=ym.split('-'); return(m[parseInt(mo)]||mo)+" '"+y.slice(2);
+function renderEditCurrentPhotos(){
+  const container = document.getElementById('editCurrentPhotosContainer');
+  if(editingExistingPhotos.length === 0){
+    container.innerHTML = '<span style="font-size:12px;color:var(--ink-soft);">No existing photos</span>';
+    return;
+  }
+  container.innerHTML = editingExistingPhotos.map((photo, idx) => `
+    <div style="display:inline-flex;align-items:center;background:var(--beige-2);padding:4px 8px;border-radius:6px;gap:6px;">
+      <button type="button" class="photo-link edit-view-single-photo" data-index="${idx}">Photo ${idx+1}</button>
+      <button type="button" style="background:var(--alert);color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:10px;cursor:pointer;line-height:1;" data-index="${idx}" class="remove-existing-photo-btn">×</button>
+    </div>
+  `).join('');
+
+  document.querySelectorAll('.edit-view-single-photo').forEach(btn=>{
+    btn.addEventListener('click', ()=> openPhotoGallery([editingExistingPhotos[Number(btn.dataset.index)]]));
+  });
+  document.querySelectorAll('.remove-existing-photo-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const idx = Number(btn.dataset.index);
+      editingExistingPhotos.splice(idx, 1);
+      renderEditCurrentPhotos();
+    });
+  });
 }
+
+document.getElementById('cancelEditBtn').addEventListener('click', ()=>{
+  document.getElementById('editOverlay').classList.remove('show');
+  editingId = null;
+});
+
+// DELETE REQUEST BUTTON
+document.getElementById('deleteRequestBtn').addEventListener('click', async ()=>{
+  if(!editingId) return;
+  if(!confirm('Are you sure you want to delete this purchase request permanently?')) return;
+  const btn = document.getElementById('deleteRequestBtn');
+  btn.disabled = true; btn.textContent = 'Deleting...';
+  try{
+    await deleteDoc(doc(db, CONFIG.COLLECTION, editingId));
+    showToast('Request deleted successfully');
+    document.getElementById('editOverlay').classList.remove('show');
+    editingId = null;
+    await loadAdminRequests();
+  } catch(err){
+    showToast('Could not delete request', true);
+  } finally{
+    btn.disabled = false; btn.textContent = 'Delete Request';
+  }
+});
+
+document.getElementById('saveEditBtn').addEventListener('click', async ()=>{
+  if(!editingId) return;
+  const btn = document.getElementById('saveEditBtn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  try{
+    const newFiles = Array.from(document.querySelectorAll('.editPhotoDynamicInput'))
+      .map(input => input.files[0])
+      .filter(file => file !== undefined);
+
+    const newlyCompressed = [];
+    for(const file of newFiles){
+      const compressed = await compressImage(file);
+      if(compressed) newlyCompressed.push(compressed);
+    }
+
+    const finalPhotos = [...editingExistingPhotos, ...newlyCompressed];
+    const estCostVal = document.getElementById('editEstimatedCost').value;
+
+    await updateDoc(doc(db, CONFIG.COLLECTION, editingId), {
+      requestType: document.getElementById('editRequestType').value,
+      itemName: document.getElementById('editItemName').value.trim(),
+      quantity: document.getElementById('editQuantity').value,
+      urgency: document.getElementById('editUrgency').value,
+      estimatedCost: estCostVal ? Number(estCostVal) : 0,
+      requestedBy: document.getElementById('editRequestedBy').value.trim(),
+      status: document.getElementById('editStatus').value,
+      reason: document.getElementById('editReason').value.trim(),
+      itemLink1: document.getElementById('editItemLink1').value.trim(),
+      itemLink2: document.getElementById('editItemLink2').value.trim(),
+      notes: document.getElementById('editNotes').value.trim(),
+      photos: finalPhotos,
+      itemPhoto1: "",
+      itemPhoto2: ""
+    });
+    showToast('Request updated!');
+    document.getElementById('editOverlay').classList.remove('show');
+    editingId = null;
+    await loadAdminRequests();
+  } catch(err){
+    showToast('Could not save changes', true);
+  } finally{
+    btn.disabled = false; btn.textContent = 'Save Changes';
+  }
+});
 </script>
 </body>
 </html>
