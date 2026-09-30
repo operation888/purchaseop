@@ -144,6 +144,20 @@
   .photo-view-box{background:#fff;border-radius:14px;padding:14px;max-width:min(92vw,600px);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.35);}
   .photo-view-box img{max-width:100%;max-height:72vh;border-radius:8px;object-fit:contain;display:block;margin:0 auto;}
   .photo-view-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px;}
+
+  /* ===== Icon refresh button (session bar) ===== */
+  .session-actions{display:flex;align-items:center;gap:8px;}
+  .icon-refresh{
+    background:transparent;border:none;color:var(--accent-light);
+    border-radius:50%;width:36px;height:36px;padding:0;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;
+    filter:drop-shadow(0 0 3px rgba(201,181,132,.45));
+  }
+  .session-bar button.icon-refresh:hover{background:transparent;color:var(--beige);}
+  .icon-refresh:disabled{opacity:.7;cursor:not-allowed;}
+  .icon-refresh svg{width:28px;height:28px;}
+  .icon-refresh.spinning svg{animation:spinIcon .7s linear infinite;}
+  @keyframes spinIcon{to{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
@@ -170,7 +184,12 @@
 <div id="staffApp">
   <div class="session-bar">
     <span>Logged in as: <strong id="sessionBranchName">—</strong></span>
-    <button type="button" id="staffLogoutBtn">Log Out</button>
+    <div class="session-actions">
+      <button type="button" class="icon-refresh" title="Refresh" aria-label="Refresh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18.9 8A8 8 0 1 1 12 4"/><path d="M11.5 1.2L15.8 4L11.5 6.8Z" fill="currentColor" stroke-width="1.4"/></svg>
+      </button>
+      <button type="button" id="staffLogoutBtn">Log Out</button>
+    </div>
   </div>
   <div class="wrap">
     <header>
@@ -291,7 +310,12 @@
 <div id="reportApp">
   <div class="session-bar">
     <span>Logged in as: <strong id="sessionReportBranchName">—</strong></span>
-    <button type="button" id="reportLogoutBtn">Log Out</button>
+    <div class="session-actions">
+      <button type="button" class="icon-refresh" title="Refresh" aria-label="Refresh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18.9 8A8 8 0 1 1 12 4"/><path d="M11.5 1.2L15.8 4L11.5 6.8Z" fill="currentColor" stroke-width="1.4"/></svg>
+      </button>
+      <button type="button" id="reportLogoutBtn">Log Out</button>
+    </div>
   </div>
   <div class="wrap">
     <header>
@@ -370,7 +394,12 @@
 <div id="adminApp">
   <div class="session-bar">
     <span>Viewing: <strong id="sessionAdminName">—</strong></span>
-    <button type="button" id="adminLogoutBtn">Log Out</button>
+    <div class="session-actions">
+      <button type="button" class="icon-refresh" title="Refresh" aria-label="Refresh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18.9 8A8 8 0 1 1 12 4"/><path d="M11.5 1.2L15.8 4L11.5 6.8Z" fill="currentColor" stroke-width="1.4"/></svg>
+      </button>
+      <button type="button" id="adminLogoutBtn">Log Out</button>
+    </div>
   </div>
   <div class="wrap">
     <header>
@@ -855,6 +884,7 @@ function compressImage(file, maxDim = 1280, quality = 0.7){
 
 // ===== LOGIN =====
 let currentUsername = null;
+let currentRole = null;
 
 document.getElementById('staffLoginForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
@@ -881,6 +911,7 @@ document.getElementById('staffLoginForm').addEventListener('submit', async (e)=>
 
   errBox.classList.remove('show');
   currentUsername = match.username;
+  currentRole = match.role;
   document.getElementById('loginOverlay').style.display = 'none';
 
   try{
@@ -1540,6 +1571,35 @@ document.getElementById('saveEditBtn').addEventListener('click', async ()=>{
   } finally{
     btn.disabled = false; btn.textContent = 'Save Changes';
   }
+});
+
+// ===== ICON REFRESH BUTTON (all roles) =====
+document.querySelectorAll('.icon-refresh').forEach(btn=>{
+  btn.addEventListener('click', async ()=>{
+    if(btn.disabled) return;
+    btn.classList.add('spinning');
+    btn.disabled = true;
+    try{
+      if(currentRole === 'admin'){
+        await loadBranchesAdmin();
+        renderBranchFilterOptions();
+        await loadAdminRequests();
+      } else if(currentRole === 'report'){
+        await loadReportStats();
+        if(document.getElementById('reportDetailCard').style.display === 'block'){
+          renderReportDetail(activeReportStatusFilter, null);
+        }
+      } else {
+        await loadStaffRequests();
+      }
+      showToast('Refreshed!');
+    } catch(err){
+      showToast('Could not refresh', true);
+    } finally{
+      btn.classList.remove('spinning');
+      btn.disabled = false;
+    }
+  });
 });
 </script>
 </body>
